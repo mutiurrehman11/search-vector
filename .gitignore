@@ -1,4 +1,7 @@
 .env
+.env.example
+
 /.idea
 /.venv
 /pgvector
+/Pipeline/__pycache__

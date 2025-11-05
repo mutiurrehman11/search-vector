@@ -9,9 +9,8 @@ import hashlib
 from typing import Dict, List, Optional
 import os
 from dotenv import load_dotenv
-from Pipeline.Pipeline import SearchPipeline, PlayerEmbeddingGenerator
+from Pipeline.SearchPipeline import SearchPipeline
 
-# Load environment variables from .env file
 load_dotenv()
 
 
@@ -35,10 +34,6 @@ class Config:
     DEFAULT_RESULTS = int(os.getenv('DEFAULT_RESULTS', 20))
 
 
-# ============================================================================
-# FLASK APP SETUP
-# ============================================================================
-
 app = Flask(__name__)
 app.config.from_object(Config)
 CORS(app)
@@ -50,25 +45,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Initialize search pipeline
+# Initialize pipeline
 pipeline = SearchPipeline(Config.DB_CONFIG)
 
-# Load trained model if exists
-try:
-    if os.path.exists(Config.MODEL_PATH):
-        pipeline.reranker.load_model(Config.MODEL_PATH)
-        logger.info(f"Loaded re-ranking model from {Config.MODEL_PATH}")
-except Exception as e:
-    logger.warning(f"Failed to load model: {e}")
+logger.info("Search pipeline initialized")
 
-
-# ============================================================================
-# REQUEST/RESPONSE SCHEMAS
-# ============================================================================
 
 class SearchRequestSchema(Schema):
     """Schema for search requests"""
-    user_id = fields.Int(required=True)
+    user_id = fields.Int(required=False)  # Optional - only needed for personalization and logging
 
     # Filters
     position = fields.Str(validate=validate.OneOf(['forward', 'midfielder', 'defender', 'goalkeeper', 'any']))
@@ -132,9 +117,6 @@ def validate_request(schema_class):
     return decorator
 
 
-# ============================================================================
-# API ENDPOINTS
-# ============================================================================
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -144,7 +126,8 @@ def health_check():
         'timestamp': datetime.utcnow().isoformat(),
         'services': {
             'database': 'connected',
-            'reranker': 'loaded' if pipeline.reranker.model else 'not_loaded'
+            'pgvector': pipeline.engine.pgvector_available if hasattr(pipeline, 'engine') else False,
+            'search_pipeline': 'initialized'
         }
     })
 
@@ -153,85 +136,76 @@ def health_check():
 @validate_request(SearchRequestSchema)
 def search_players():
     """
-    Search for players with two-stage retrieval + ML re-ranking
-
+    Search for players based on filters and preferences
+    
     POST /api/v1/search
     {
         "user_id": 123,
         "position": "midfielder",
-        "min_skill": 6,
-        "max_skill": 9,
+        "min_skill": 60,
+        "max_skill": 90,
         "latitude": 40.7128,
         "longitude": -74.0060,
         "max_distance_km": 10,
         "availability": ["weekday_evening"],
         "tags": ["competitive"],
-        "tag_boosts": {"competitive": 2.0},
-        "seed_player_ids": [45],
-        "limit": 20
+        "limit": 20,
+        "offset": 0
     }
     """
     try:
         data = request.validated_data
 
-        # Extract filters
+        # Extract filters for the search
         filters = {
             k: v for k, v in data.items()
-            if k not in ['user_id', 'seed_player_ids', 'tag_boosts', 'limit', 'offset']
+            if k not in ['user_id', 'limit', 'offset']
         }
 
-        # Get seed players if provided
-        seed_players = None
-        if data.get('seed_player_ids'):
-            # Fetch seed players from database
-            with pipeline.search_engine.conn.cursor() as cur:
-                cur.execute(
-                    "SELECT * FROM players WHERE id = ANY(%s);",
-                    (data['seed_player_ids'],)
-                )
-                seed_players = [dict(row) for row in cur.fetchall()]
-
-        # Execute search
-        results = pipeline.search(
-            user_id=data['user_id'],
+        # Execute search using the new pipeline
+        search_results = pipeline.search_players(
             filters=filters,
-            seed_players=seed_players,
-            tag_boosts=data.get('tag_boosts'),
-            top_k=data['limit']
+            limit=data.get('limit', Config.DEFAULT_RESULTS),
+            offset=data.get('offset', 0)
         )
 
         # Format response
         formatted_results = []
-        for player in results:
-            formatted_results.append({
+        for player in search_results.get('results', []):
+            formatted_player = {
                 'id': player['id'],
-                'name': player['name'],
-                'position': player['position'],
-                'skill_level': player['skill_level'],
-                'age': player['age'],
-                'location': {
-                    'latitude': player['latitude'],
-                    'longitude': player['longitude'],
-                    'name': player.get('location_name')
-                },
-                'availability': player['availability'],
-                'tags': player['tags'],
-                'bio': player['bio'],
-                'profile_image_url': player.get('profile_image_url'),
-                'scores': {
-                    'vector_similarity': player.get('vector_similarity', 0),
-                    'ml_score': player.get('ml_score', 0)
-                },
-                'explanations': player.get('explanations', [])
-            })
+                'name': f"{player.get('first_name', '')} {player.get('last_name', '')}".strip(),
+                'position': player.get('positions', []),
+                'skill_level': player.get('avg_skill_level', 0),
+                'age': player.get('age', 0),
+                'location': player.get('location', {}),
+                'skills': player.get('skills', {}),
+                'status': player.get('status', 'active'),
+                'match_score': player.get('match_score', 0),
+                'similarity_score': player.get('similarity_score'),
+                'distance_km': player.get('distance_km')
+            }
+            formatted_results.append(formatted_player)
+
+        # Log search event (only if user_id provided)
+        if data.get('user_id'):
+            try:
+                # This would be implemented with proper event logging
+                logger.info(f"Search performed by user {data['user_id']}: {len(formatted_results)} results")
+            except Exception as e:
+                logger.warning(f"Failed to log search event: {e}")
 
         return jsonify({
             'results': formatted_results,
-            'total': len(formatted_results),
+            'total': search_results.get('total_count', len(formatted_results)),
             'metadata': {
-                'reranking_enabled': Config.RERANKING_ENABLED,
-                'query_id': hashlib.md5(json.dumps(filters).encode()).hexdigest()[:16]
-            }
+                'search_type': search_results.get('metadata', {}).get('search_type', 'unknown'),
+                'candidates_found': search_results.get('metadata', {}).get('candidates_found', 0),
+                'reranked': search_results.get('metadata', {}).get('reranked', False),
+                'pgvector_available': search_results.get('metadata', {}).get('pgvector_available', False),
+                'query_id': hashlib.md5(json.dumps(filters, sort_keys=True).encode()).hexdigest()[:16]
+            },
+            'telemetry': search_results.get('telemetry', {})
         })
 
     except Exception as e:
@@ -292,20 +266,26 @@ def get_recommendations(player_id: str):
     try:
         limit = min(int(request.args.get('limit', 10)), 50)
 
-        recommendations = pipeline.get_recommendations(
-            player_id=player_id,
-            top_k=limit
+        # Use the similarity search with the player as seed
+        filters = {
+            'seed_player_ids': [player_id]
+        }
+        
+        recommendations = pipeline.search_players(
+            filters=filters,
+            limit=limit,
+            offset=0
         )
 
         formatted_results = []
-        for player in recommendations:
+        for player in recommendations.get('results', []):
             formatted_results.append({
                 'id': player['id'],
-                'name': player['name'],
-                'position': player['position'],
-                'skill_level': player['skill_level'],
-                'similarity': player.get('similarity', 0),
-                'tags': player['tags'],
+                'name': f"{player.get('first_name', '')} {player.get('last_name', '')}".strip(),
+                'position': player.get('positions', []),
+                'skill_level': player.get('avg_skill_level', 0),
+                'similarity': player.get('similarity_score', 0),
+                'tags': player.get('tags', []),
                 'profile_image_url': player.get('profile_image_url')
             })
 
@@ -319,6 +299,65 @@ def get_recommendations(player_id: str):
         logger.error(f"Recommendations error: {str(e)}", exc_info=True)
         return jsonify({
             'error': 'Recommendations failed',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/v1/admin/train-model', methods=['POST'])
+def train_ml_model():
+    """
+    Train the ML re-ranking model (Admin endpoint)
+    
+    POST /api/v1/admin/train-model
+    """
+    try:
+        logger.info("Starting ML model training via API")
+        result = pipeline.train_ml_model()
+        
+        if result['success']:
+            return jsonify({
+                'message': result['message'],
+                'metadata': result['metadata']
+            }), 200
+        else:
+            return jsonify({
+                'error': result['error'],
+                'metadata': result['metadata']
+            }), 400
+            
+    except Exception as e:
+        logger.error(f"ML training error: {str(e)}", exc_info=True)
+        return jsonify({
+            'error': 'ML model training failed',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/v1/recommendations/personalized/<int:user_id>', methods=['GET'])
+def get_personalized_recommendations(user_id: int):
+    """
+    Get personalized recommendations for a user based on their interaction history
+    
+    GET /api/v1/recommendations/personalized/123?limit=20
+    """
+    try:
+        limit = request.args.get('limit', 20, type=int)
+        limit = min(limit, 50)  # Cap at 50
+        
+        logger.info(f"Getting personalized recommendations for user {user_id}")
+        result = pipeline.get_personalized_recommendations(str(user_id), limit)
+        
+        return jsonify({
+            'recommendations': result['results'],
+            'total_count': result['total_count'],
+            'metadata': result['metadata'],
+            'telemetry': result.get('telemetry', {})
+        })
+        
+    except Exception as e:
+        logger.error(f"Personalized recommendations error: {str(e)}", exc_info=True)
+        return jsonify({
+            'error': 'Personalized recommendations failed',
             'message': str(e)
         }), 500
 
@@ -465,10 +504,6 @@ def train_model():
         }), 500
 
 
-# ============================================================================
-# ERROR HANDLERS
-# ============================================================================
-
 @app.errorhandler(404)
 def not_found(error):
     return jsonify({
@@ -485,10 +520,6 @@ def internal_error(error):
         'message': 'An unexpected error occurred'
     }), 500
 
-
-# ============================================================================
-# CLI COMMANDS
-# ============================================================================
 
 if __name__ == '__main__':
     import sys
