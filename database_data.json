@@ -1,0 +1,1055 @@
+{
+    "tenants": [],
+    "players": [
+        {
+            "id": "IGLIQEXM584GDVRA8C3TVBDL5L",
+            "first_name": "Isabella",
+            "last_name": "Anderson",
+            "contacts": null,
+            "description": "Experienced forward player with 19 years of experience. Known for strong technical skills and game intelligence.",
+            "playing_since": null,
+            "height": 186.0,
+            "weight": 83.0,
+            "location": {
+                "name": "Berlin",
+                "country": "Germany",
+                "latitude": 52.52,
+                "longitude": 13.405
+            },
+            "birth_date": "1993-01-01",
+            "tags": [
+                "tactical",
+                "team-player",
+                "competitive"
+            ],
+            "availability": [
+                "weekday_morning",
+                "weekend_afternoon",
+                "weekend_morning",
+                "weekday_evening"
+            ],
+            "document": null,
+            "profile_picture": {
+                "url": "https://randomuser.me/api/portraits/men/0.jpg"
+            },
+            "pictures": null,
+            "gender": "male",
+            "status": "active",
+            "user_id": null,
+            "created_at": "2025-11-08T14:21:12.501653+01:00",
+            "updated_at": "2025-11-08T14:21:12.501653+01:00",
+            "deleted_at": null,
+            "tenant_id": null,
+            "position_code": null,
+            "embedding": null
+        },
+        {
+            "id": "32494HXRI743MPZSOK04ZJQ7S7",
+            "first_name": "Mia",
+            "last_name": "Smith",
+            "contacts": null,
+            "description": "Experienced midfielder player with 11 years of experience. Known for strong technical skills and game intelligence.",
+            "playing_since": null,
+            "height": 177.0,
+            "weight": 95.0,
+            "location": {
+                "name": "Madrid",
+                "country": "Spain",
+                "latitude": 40.4168,
+                "longitude": -3.7038
+            },
+            "birth_date": "2001-02-04",
+            "tags": [
+                "leader",
+                "physical",
+                "competitive",
+                "technical"
+            ],
+            "availability": [
+                "weekday_morning",
+                "weekend_morning",
+                "weekday_evening"
+            ],
+            "document": null,
+            "profile_picture": {
+                "url": "https://randomuser.me/api/portraits/men/1.jpg"
+            },
+            "pictures": null,
+            "gender": "male",
+            "status": "active",
+            "user_id": null,
+            "created_at": "2025-11-08T14:21:14.549091+01:00",
+            "updated_at": "2025-11-08T14:21:14.549091+01:00",
+            "deleted_at": null,
+            "tenant_id": null,
+            "position_code": null,
+            "embedding": null
+        },
+        {
+            "id": "CA6KQZW1OOHRCJ15ZTZPJZ2XSJ",
+            "first_name": "Michael",
+            "last_name": "Lopez",
+            "contacts": null,
+            "description": "Experienced midfielder player with 17 years of experience. Known for strong technical skills and game intelligence.",
+            "playing_since": null,
+            "height": 165.0,
+            "weight": 76.0,
+            "location": {
+                "name": "Miami",
+                "country": "USA",
+                "latitude": 25.7617,
+                "longitude": -80.1918
+            },
+            "birth_date": "1995-11-12",
+            "tags": [
+                "tactical",
+                "leader",
+                "technical",
+                "physical"
+            ],
+            "availability": [
+                "weekday_morning",
+                "weekend_morning",
+                "weekday_afternoon"
+            ],
+            "document": null,
+            "profile_picture": {
+                "url": "https://randomuser.me/api/portraits/women/2.jpg"
+            },
+            "pictures": null,
+            "gender": "female",
+            "status": "active",
+            "user_id": null,
+            "created_at": "2025-11-08T14:21:16.411098+01:00",
+            "updated_at": "2025-11-08T14:21:16.411098+01:00",
+            "deleted_at": null,
+            "tenant_id": null,
+            "position_code": null,
+            "embedding": null
+        },
+        {
+            "id": "29YUYJ4KKN9Z0F4KGC24YH82JT",
+            "first_name": "Emma",
+            "last_name": "Williams",
+            "contacts": null,
+            "description": "Experienced forward player with 20 years of experience. Known for strong technical skills and game intelligence.",
+            "playing_since": null,
+            "height": 186.0,
+            "weight": 94.0,
+            "location": {
+                "name": "Madrid",
+                "country": "Spain",
+                "latitude": 40.4168,
+                "longitude": -3.7038
+            },
+            "birth_date": "1992-04-09",
+            "tags": [
+                "team-player",
+                "competitive"
+            ],
+            "availability": [
+                "weekend_morning",
+                "weekday_afternoon",
+                "weekend_afternoon",
+                "weekday_morning"
+            ],
+            "document": null,
+            "profile_picture": {
+                "url": "https://randomuser.me/api/portraits/women/3.jpg"
+            },
+            "pictures": null,
+            "gender": "female",
+            "status": "active",
+            "user_id": null,
+            "created_at": "2025-11-08T14:21:18.035966+01:00",
+            "updated_at": "2025-11-08T14:21:18.035966+01:00",
+            "deleted_at": null,
+            "tenant_id": null,
+            "position_code": null,
+            "embedding": null
+        },
+        {
+            "id": "GXXEA9W4BHSFLIA5NAJ7NCACBT",
+            "first_name": "Michael",
+            "last_name": "Moore",
+            "contacts": null,
+            "description": "Experienced goalkeeper player with 10 years of experience. Known for strong technical skills and game intelligence.",
+            "playing_since": null,
+            "height": 162.0,
+            "weight": 67.0,
+            "location": {
+                "name": "Miami",
+                "country": "USA",
+                "latitude": 25.7617,
+                "longitude": -80.1918
+            },
+            "birth_date": "2001-12-14",
+            "tags": [
+                "team-player",
+                "leader"
+            ],
+            "availability": [
+                "weekend_afternoon",
+                "weekend_morning"
+            ],
+            "document": null,
+            "profile_picture": {
+                "url": "https://randomuser.me/api/portraits/men/4.jpg"
+            },
+            "pictures": null,
+            "gender": "male",
+            "status": "active",
+            "user_id": null,
+            "created_at": "2025-11-08T14:21:20.275081+01:00",
+            "updated_at": "2025-11-08T14:21:20.275081+01:00",
+            "deleted_at": null,
+            "tenant_id": null,
+            "position_code": null,
+            "embedding": null
+        },
+        {
+            "id": "DOZ7ZAP59XUCEXUBYNOEAYZH61",
+            "first_name": "Charlotte",
+            "last_name": "Lee",
+            "contacts": null,
+            "description": "Experienced forward player with 13 years of experience. Known for strong technical skills and game intelligence.",
+            "playing_since": null,
+            "height": 184.0,
+            "weight": 76.0,
+            "location": {
+                "name": "Chicago",
+                "country": "USA",
+                "latitude": 41.8781,
+                "longitude": -87.6298
+            },
+            "birth_date": "1999-02-10",
+            "tags": [
+                "competitive",
+                "tactical"
+            ],
+            "availability": [
+                "weekend_morning",
+                "weekend_afternoon",
+                "weekday_afternoon",
+                "weekday_morning"
+            ],
+            "document": null,
+            "profile_picture": {
+                "url": "https://randomuser.me/api/portraits/men/5.jpg"
+            },
+            "pictures": null,
+            "gender": "male",
+            "status": "active",
+            "user_id": null,
+            "created_at": "2025-11-08T14:21:22.107067+01:00",
+            "updated_at": "2025-11-08T14:21:22.107067+01:00",
+            "deleted_at": null,
+            "tenant_id": null,
+            "position_code": null,
+            "embedding": null
+        },
+        {
+            "id": "45WF43YPF010AXNBV6F74B6E8I",
+            "first_name": "Michael",
+            "last_name": "Wilson",
+            "contacts": null,
+            "description": "Experienced goalkeeper player with 3 years of experience. Known for strong technical skills and game intelligence.",
+            "playing_since": null,
+            "height": 188.0,
+            "weight": 93.0,
+            "location": {
+                "name": "Miami",
+                "country": "USA",
+                "latitude": 25.7617,
+                "longitude": -80.1918
+            },
+            "birth_date": "2008-12-26",
+            "tags": [
+                "tactical",
+                "competitive",
+                "technical"
+            ],
+            "availability": [
+                "weekday_evening",
+                "weekday_morning"
+            ],
+            "document": null,
+            "profile_picture": {
+                "url": "https://randomuser.me/api/portraits/women/6.jpg"
+            },
+            "pictures": null,
+            "gender": "female",
+            "status": "active",
+            "user_id": null,
+            "created_at": "2025-11-08T14:21:24.061206+01:00",
+            "updated_at": "2025-11-08T14:21:24.061206+01:00",
+            "deleted_at": null,
+            "tenant_id": null,
+            "position_code": null,
+            "embedding": null
+        },
+        {
+            "id": "KSTA77F769QRGHHXYBFJP6YPJC",
+            "first_name": "Diego",
+            "last_name": "Martinez",
+            "contacts": null,
+            "description": "Experienced defender player with 16 years of experience. Known for strong technical skills and game intelligence.",
+            "playing_since": null,
+            "height": 189.0,
+            "weight": 87.0,
+            "location": {
+                "name": "Paris",
+                "country": "France",
+                "latitude": 48.8566,
+                "longitude": 2.3522
+            },
+            "birth_date": "1995-11-18",
+            "tags": [
+                "physical",
+                "competitive",
+                "technical"
+            ],
+            "availability": [
+                "weekend_morning",
+                "weekend_afternoon",
+                "weekday_morning"
+            ],
+            "document": null,
+            "profile_picture": {
+                "url": "https://randomuser.me/api/portraits/women/7.jpg"
+            },
+            "pictures": null,
+            "gender": "female",
+            "status": "active",
+            "user_id": null,
+            "created_at": "2025-11-08T14:21:25.905114+01:00",
+            "updated_at": "2025-11-08T14:21:25.905114+01:00",
+            "deleted_at": null,
+            "tenant_id": null,
+            "position_code": null,
+            "embedding": null
+        },
+        {
+            "id": "7AO19C8K3Q0E8LG146K3HXR9A8",
+            "first_name": "Luis",
+            "last_name": "Martin",
+            "contacts": null,
+            "description": "Experienced forward player with 3 years of experience. Known for strong technical skills and game intelligence.",
+            "playing_since": null,
+            "height": 189.0,
+            "weight": 60.0,
+            "location": {
+                "name": "Berlin",
+                "country": "Germany",
+                "latitude": 52.52,
+                "longitude": 13.405
+            },
+            "birth_date": "2009-02-19",
+            "tags": [
+                "competitive",
+                "tactical",
+                "leader",
+                "technical"
+            ],
+            "availability": [
+                "weekend_afternoon",
+                "weekday_evening",
+                "weekday_afternoon"
+            ],
+            "document": null,
+            "profile_picture": {
+                "url": "https://randomuser.me/api/portraits/women/8.jpg"
+            },
+            "pictures": null,
+            "gender": "female",
+            "status": "active",
+            "user_id": null,
+            "created_at": "2025-11-08T14:21:27.746557+01:00",
+            "updated_at": "2025-11-08T14:21:27.746557+01:00",
+            "deleted_at": null,
+            "tenant_id": null,
+            "position_code": null,
+            "embedding": null
+        },
+        {
+            "id": "MUX7V33WUPRTFU5NBBP9EB4MVP",
+            "first_name": "Abigail",
+            "last_name": "Anderson",
+            "contacts": null,
+            "description": "Experienced goalkeeper player with 21 years of experience. Known for strong technical skills and game intelligence.",
+            "playing_since": null,
+            "height": 160.0,
+            "weight": 68.0,
+            "location": {
+                "name": "Berlin",
+                "country": "Germany",
+                "latitude": 52.52,
+                "longitude": 13.405
+            },
+            "birth_date": "1991-09-13",
+            "tags": [
+                "competitive",
+                "tactical",
+                "physical",
+                "team-player"
+            ],
+            "availability": [
+                "weekend_afternoon",
+                "weekday_morning",
+                "weekday_afternoon",
+                "weekend_morning"
+            ],
+            "document": null,
+            "profile_picture": {
+                "url": "https://randomuser.me/api/portraits/women/9.jpg"
+            },
+            "pictures": null,
+            "gender": "female",
+            "status": "active",
+            "user_id": null,
+            "created_at": "2025-11-08T14:21:29.797809+01:00",
+            "updated_at": "2025-11-08T14:21:29.797809+01:00",
+            "deleted_at": null,
+            "tenant_id": null,
+            "position_code": null,
+            "embedding": null
+        }
+    ],
+    "player_skills": [
+        {
+            "id": 1,
+            "player_id": "IGLIQEXM584GDVRA8C3TVBDL5L",
+            "skill": "dribbling",
+            "level": 52,
+            "created_at": "2025-11-08T14:21:13.024600+01:00",
+            "updated_at": "2025-11-08T14:21:13.024600+01:00"
+        },
+        {
+            "id": 2,
+            "player_id": "IGLIQEXM584GDVRA8C3TVBDL5L",
+            "skill": "passing",
+            "level": 54,
+            "created_at": "2025-11-08T14:21:13.222317+01:00",
+            "updated_at": "2025-11-08T14:21:13.222317+01:00"
+        },
+        {
+            "id": 3,
+            "player_id": "IGLIQEXM584GDVRA8C3TVBDL5L",
+            "skill": "shooting",
+            "level": 52,
+            "created_at": "2025-11-08T14:21:13.409428+01:00",
+            "updated_at": "2025-11-08T14:21:13.409428+01:00"
+        },
+        {
+            "id": 4,
+            "player_id": "IGLIQEXM584GDVRA8C3TVBDL5L",
+            "skill": "speed",
+            "level": 54,
+            "created_at": "2025-11-08T14:21:13.621101+01:00",
+            "updated_at": "2025-11-08T14:21:13.621101+01:00"
+        },
+        {
+            "id": 5,
+            "player_id": "IGLIQEXM584GDVRA8C3TVBDL5L",
+            "skill": "stamina",
+            "level": 73,
+            "created_at": "2025-11-08T14:21:13.827294+01:00",
+            "updated_at": "2025-11-08T14:21:13.827294+01:00"
+        },
+        {
+            "id": 6,
+            "player_id": "IGLIQEXM584GDVRA8C3TVBDL5L",
+            "skill": "strength",
+            "level": 78,
+            "created_at": "2025-11-08T14:21:14.100211+01:00",
+            "updated_at": "2025-11-08T14:21:14.100211+01:00"
+        },
+        {
+            "id": 7,
+            "player_id": "32494HXRI743MPZSOK04ZJQ7S7",
+            "skill": "dribbling",
+            "level": 64,
+            "created_at": "2025-11-08T14:21:14.747454+01:00",
+            "updated_at": "2025-11-08T14:21:14.747454+01:00"
+        },
+        {
+            "id": 8,
+            "player_id": "32494HXRI743MPZSOK04ZJQ7S7",
+            "skill": "passing",
+            "level": 94,
+            "created_at": "2025-11-08T14:21:14.951124+01:00",
+            "updated_at": "2025-11-08T14:21:14.951124+01:00"
+        },
+        {
+            "id": 9,
+            "player_id": "32494HXRI743MPZSOK04ZJQ7S7",
+            "skill": "shooting",
+            "level": 59,
+            "created_at": "2025-11-08T14:21:15.222276+01:00",
+            "updated_at": "2025-11-08T14:21:15.222276+01:00"
+        },
+        {
+            "id": 10,
+            "player_id": "32494HXRI743MPZSOK04ZJQ7S7",
+            "skill": "speed",
+            "level": 75,
+            "created_at": "2025-11-08T14:21:15.463782+01:00",
+            "updated_at": "2025-11-08T14:21:15.463782+01:00"
+        }
+    ],
+    "player_teams": [
+        {
+            "id": 1,
+            "player_id": "IGLIQEXM584GDVRA8C3TVBDL5L",
+            "playable_type": "Team",
+            "playable_id": "X7SHZLKTBCHZT31QJOHSC7B5UB",
+            "overview": null,
+            "start_at": "2025-04-23T14:21:14.334496+02:00",
+            "end_at": null,
+            "position": "defender",
+            "tshirt": null,
+            "approved_at": null,
+            "created_at": "2025-11-08T14:21:14.334496+01:00",
+            "updated_at": "2025-11-08T14:21:14.334496+01:00"
+        },
+        {
+            "id": 2,
+            "player_id": "32494HXRI743MPZSOK04ZJQ7S7",
+            "playable_type": "Team",
+            "playable_id": "W8GCVB623LFJJD6N98YB6UU91G",
+            "overview": null,
+            "start_at": "2025-03-11T14:21:16.195017+01:00",
+            "end_at": null,
+            "position": "defender",
+            "tshirt": null,
+            "approved_at": null,
+            "created_at": "2025-11-08T14:21:16.195017+01:00",
+            "updated_at": "2025-11-08T14:21:16.195017+01:00"
+        },
+        {
+            "id": 3,
+            "player_id": "CA6KQZW1OOHRCJ15ZTZPJZ2XSJ",
+            "playable_type": "Team",
+            "playable_id": "G4S549H7GBS8OCUMS90DS2J8VR",
+            "overview": null,
+            "start_at": "2025-09-26T14:21:17.814724+02:00",
+            "end_at": null,
+            "position": "goalkeeper",
+            "tshirt": null,
+            "approved_at": null,
+            "created_at": "2025-11-08T14:21:17.814724+01:00",
+            "updated_at": "2025-11-08T14:21:17.814724+01:00"
+        },
+        {
+            "id": 4,
+            "player_id": "29YUYJ4KKN9Z0F4KGC24YH82JT",
+            "playable_type": "Team",
+            "playable_id": "J9GFDB85BCI1X9Z8RJ6VS1SU2O",
+            "overview": null,
+            "start_at": "2025-08-31T14:21:19.864185+02:00",
+            "end_at": null,
+            "position": "goalkeeper",
+            "tshirt": null,
+            "approved_at": null,
+            "created_at": "2025-11-08T14:21:19.864185+01:00",
+            "updated_at": "2025-11-08T14:21:19.864185+01:00"
+        },
+        {
+            "id": 5,
+            "player_id": "GXXEA9W4BHSFLIA5NAJ7NCACBT",
+            "playable_type": "Team",
+            "playable_id": "3P8T9RI9M51DO0FLV7GJCUT0DT",
+            "overview": null,
+            "start_at": "2025-03-28T14:21:21.909214+01:00",
+            "end_at": null,
+            "position": "defender",
+            "tshirt": null,
+            "approved_at": null,
+            "created_at": "2025-11-08T14:21:21.909214+01:00",
+            "updated_at": "2025-11-08T14:21:21.909214+01:00"
+        },
+        {
+            "id": 6,
+            "player_id": "DOZ7ZAP59XUCEXUBYNOEAYZH61",
+            "playable_type": "Team",
+            "playable_id": "CYUDR11BKXK1PUIC9PB4CWG69A",
+            "overview": null,
+            "start_at": "2024-11-13T14:21:23.656029+01:00",
+            "end_at": null,
+            "position": "defender",
+            "tshirt": null,
+            "approved_at": null,
+            "created_at": "2025-11-08T14:21:23.656029+01:00",
+            "updated_at": "2025-11-08T14:21:23.656029+01:00"
+        },
+        {
+            "id": 7,
+            "player_id": "45WF43YPF010AXNBV6F74B6E8I",
+            "playable_type": "Team",
+            "playable_id": "OLEYFCZIWRQF6LG59LDV6QBD0K",
+            "overview": null,
+            "start_at": "2025-05-21T14:21:25.701239+02:00",
+            "end_at": null,
+            "position": "forward",
+            "tshirt": null,
+            "approved_at": null,
+            "created_at": "2025-11-08T14:21:25.701239+01:00",
+            "updated_at": "2025-11-08T14:21:25.701239+01:00"
+        },
+        {
+            "id": 8,
+            "player_id": "KSTA77F769QRGHHXYBFJP6YPJC",
+            "playable_type": "Team",
+            "playable_id": "2E6CTNE90L8P60EP2MWYFC5VTJ",
+            "overview": null,
+            "start_at": "2025-07-15T14:21:27.557600+02:00",
+            "end_at": null,
+            "position": "goalkeeper",
+            "tshirt": null,
+            "approved_at": null,
+            "created_at": "2025-11-08T14:21:27.557600+01:00",
+            "updated_at": "2025-11-08T14:21:27.557600+01:00"
+        },
+        {
+            "id": 9,
+            "player_id": "7AO19C8K3Q0E8LG146K3HXR9A8",
+            "playable_type": "Team",
+            "playable_id": "NZJ6ODVCD774SZQ9C2H091S09K",
+            "overview": null,
+            "start_at": "2024-12-09T14:21:29.487340+01:00",
+            "end_at": null,
+            "position": "defender",
+            "tshirt": null,
+            "approved_at": null,
+            "created_at": "2025-11-08T14:21:29.487340+01:00",
+            "updated_at": "2025-11-08T14:21:29.487340+01:00"
+        },
+        {
+            "id": 10,
+            "player_id": "MUX7V33WUPRTFU5NBBP9EB4MVP",
+            "playable_type": "Team",
+            "playable_id": "YJXDEDZMH9ETPZIUNI9IRBCI61",
+            "overview": null,
+            "start_at": "2025-04-08T14:21:31.959478+02:00",
+            "end_at": null,
+            "position": "goalkeeper",
+            "tshirt": null,
+            "approved_at": null,
+            "created_at": "2025-11-08T14:21:31.959478+01:00",
+            "updated_at": "2025-11-08T14:21:31.959478+01:00"
+        }
+    ],
+    "player_improvements": [],
+    "player_goals": [],
+    "player_training_sessions": [],
+    "views": [],
+    "follows": [],
+    "chat_rooms": [],
+    "chat_messages": [],
+    "playlists": [],
+    "skills": [],
+    "categories": [],
+    "divisions": [],
+    "soccer_positions": [],
+    "countries": [],
+    "states": [],
+    "cities": [],
+    "player_engagement_stats": [
+        {
+            "player_id": "Z6ZGDSJ6ZB6UWGTZB7XUKA688X",
+            "ctr": 0.1609066245294536,
+            "recent_activity_score": 0.8212984429208725,
+            "follow_rate": 0.061230521035595974,
+            "message_rate": 0.009511110308199481,
+            "updated_at": "2025-11-08T23:09:26.742070+01:00"
+        },
+        {
+            "player_id": "VYFDPLIAB1W17924S42P2KG49V",
+            "ctr": 0.16234196095471454,
+            "recent_activity_score": 0.7755730924194597,
+            "follow_rate": 0.0932053259515403,
+            "message_rate": 0.044463128761849185,
+            "updated_at": "2025-11-08T23:09:27.283309+01:00"
+        },
+        {
+            "player_id": "TD5B526FBBD9AP8E4CI89W2UY0",
+            "ctr": 0.18169403118699945,
+            "recent_activity_score": 0.5403556991769609,
+            "follow_rate": 0.023572898929167127,
+            "message_rate": 0.02879276080208369,
+            "updated_at": "2025-11-08T23:09:27.572680+01:00"
+        },
+        {
+            "player_id": "T8KFIR6ADK0FCXLDSMW1MP1WE7",
+            "ctr": 0.08894453335671788,
+            "recent_activity_score": 0.4074475668384681,
+            "follow_rate": 0.07425746312418315,
+            "message_rate": 0.02530903310190788,
+            "updated_at": "2025-11-08T23:09:27.942009+01:00"
+        },
+        {
+            "player_id": "6O1KQMUAEQA96A1TXP9FLDYILD",
+            "ctr": 0.23563116945341567,
+            "recent_activity_score": 0.8757576983417166,
+            "follow_rate": 0.024680734459184762,
+            "message_rate": 0.034752476038390205,
+            "updated_at": "2025-11-08T23:09:28.339256+01:00"
+        },
+        {
+            "player_id": "3S99C8I5QUTW71DUQ2AIUB62WA",
+            "ctr": 0.06184332687378211,
+            "recent_activity_score": 0.33496798372362807,
+            "follow_rate": 0.09719584609500265,
+            "message_rate": 0.03554163323195135,
+            "updated_at": "2025-11-08T23:09:28.707376+01:00"
+        },
+        {
+            "player_id": "VEJW2STN7KU25YWQ2RKK7GYI24",
+            "ctr": 0.22905033769852556,
+            "recent_activity_score": 0.8731183505628006,
+            "follow_rate": 0.08294272981097671,
+            "message_rate": 0.015100584546706371,
+            "updated_at": "2025-11-08T23:09:29.031629+01:00"
+        },
+        {
+            "player_id": "OYZUFCQ5ZAZDFOSLB615BONLS7",
+            "ctr": 0.10147828045071301,
+            "recent_activity_score": 0.6960520494451583,
+            "follow_rate": 0.06133770461931571,
+            "message_rate": 0.0476017384860096,
+            "updated_at": "2025-11-08T23:09:29.213129+01:00"
+        },
+        {
+            "player_id": "YK52FELEFZX5C86P1ZFSBAYJH3",
+            "ctr": 0.1040852758191895,
+            "recent_activity_score": 0.5434017088926919,
+            "follow_rate": 0.02942937396367129,
+            "message_rate": 0.006891273318630716,
+            "updated_at": "2025-11-08T23:09:29.482557+01:00"
+        },
+        {
+            "player_id": "4JVD9DVS5O5VYLD5PPKFBCD1JD",
+            "ctr": 0.08143973572231694,
+            "recent_activity_score": 0.38329825891056013,
+            "follow_rate": 0.0905349240044287,
+            "message_rate": 0.008855813999711401,
+            "updated_at": "2025-11-08T23:09:29.732962+01:00"
+        }
+    ],
+    "player_engagement_events": [
+        {
+            "id": 291,
+            "user_id": "E51AFCAM0FJT5OKXFXQ1PR2ND4",
+            "player_id": "JRG8ZAAVATNGUZLT5MAZRBQNA1",
+            "event_type": "impression",
+            "query_context": {
+                "tags": [
+                    "technical"
+                ],
+                "max_age": 31,
+                "min_age": 19,
+                "position": "forward",
+                "max_skill": 80,
+                "min_skill": 42
+            },
+            "created_at": "2025-10-09T23:03:21.935771+02:00"
+        },
+        {
+            "id": 292,
+            "user_id": "E51AFCAM0FJT5OKXFXQ1PR2ND4",
+            "player_id": "TRQVVDANBJSA0E31HU408SVG29",
+            "event_type": "impression",
+            "query_context": {
+                "tags": [
+                    "technical"
+                ],
+                "max_age": 33,
+                "min_age": 16,
+                "position": "goalkeeper",
+                "max_skill": 78,
+                "min_skill": 56
+            },
+            "created_at": "2025-11-03T23:03:22.503928+01:00"
+        },
+        {
+            "id": 293,
+            "user_id": "E51AFCAM0FJT5OKXFXQ1PR2ND4",
+            "player_id": "2K0Q1GUWD2P2FO12LUOMNDGOZ2",
+            "event_type": "impression",
+            "query_context": {
+                "tags": [
+                    "technical",
+                    "team-player"
+                ],
+                "max_age": 33,
+                "min_age": 21,
+                "position": "defender",
+                "max_skill": 77,
+                "min_skill": 68
+            },
+            "created_at": "2025-10-22T23:03:22.704431+02:00"
+        },
+        {
+            "id": 294,
+            "user_id": "E51AFCAM0FJT5OKXFXQ1PR2ND4",
+            "player_id": "VYFDPLIAB1W17924S42P2KG49V",
+            "event_type": "profile_view",
+            "query_context": {
+                "tags": [
+                    "team-player"
+                ],
+                "max_age": 30,
+                "min_age": 23,
+                "position": "defender",
+                "max_skill": 74,
+                "min_skill": 53
+            },
+            "created_at": "2025-10-18T23:03:22.931201+02:00"
+        },
+        {
+            "id": 295,
+            "user_id": "E51AFCAM0FJT5OKXFXQ1PR2ND4",
+            "player_id": "20NM2OZARLUB4ULZ001YGSB367",
+            "event_type": "profile_view",
+            "query_context": {
+                "tags": [
+                    "team-player"
+                ],
+                "max_age": 34,
+                "min_age": 21,
+                "position": "goalkeeper",
+                "max_skill": 88,
+                "min_skill": 64
+            },
+            "created_at": "2025-11-07T23:03:23.159799+01:00"
+        },
+        {
+            "id": 296,
+            "user_id": "E51AFCAM0FJT5OKXFXQ1PR2ND4",
+            "player_id": "RCMWZFJ3661N42NXMJQ9W37VML",
+            "event_type": "impression",
+            "query_context": {
+                "tags": [
+                    "technical"
+                ],
+                "max_age": 35,
+                "min_age": 22,
+                "position": "defender",
+                "max_skill": 82,
+                "min_skill": 55
+            },
+            "created_at": "2025-10-28T23:03:23.409846+01:00"
+        },
+        {
+            "id": 297,
+            "user_id": "E51AFCAM0FJT5OKXFXQ1PR2ND4",
+            "player_id": "8701XZKX854STQNF0D55MR9FS0",
+            "event_type": "impression",
+            "query_context": {
+                "tags": [
+                    "technical"
+                ],
+                "max_age": 30,
+                "min_age": 17,
+                "position": "defender",
+                "max_skill": 82,
+                "min_skill": 43
+            },
+            "created_at": "2025-10-24T23:03:23.620682+02:00"
+        },
+        {
+            "id": 298,
+            "user_id": "E51AFCAM0FJT5OKXFXQ1PR2ND4",
+            "player_id": "L6CY72CBL7E9MB6E47BRJJ9GP1",
+            "event_type": "impression",
+            "query_context": {
+                "tags": [
+                    "technical"
+                ],
+                "max_age": 25,
+                "min_age": 16,
+                "position": "forward",
+                "max_skill": 84,
+                "min_skill": 68
+            },
+            "created_at": "2025-10-15T23:03:24.243416+02:00"
+        },
+        {
+            "id": 299,
+            "user_id": "E51AFCAM0FJT5OKXFXQ1PR2ND4",
+            "player_id": "UA7J8OWFBUOC8ZE184M06NF1EQ",
+            "event_type": "impression",
+            "query_context": {
+                "tags": [
+                    "competitive",
+                    "technical"
+                ],
+                "max_age": 25,
+                "min_age": 25,
+                "position": "forward",
+                "max_skill": 78,
+                "min_skill": 44
+            },
+            "created_at": "2025-10-25T23:03:24.509285+02:00"
+        },
+        {
+            "id": 300,
+            "user_id": "E51AFCAM0FJT5OKXFXQ1PR2ND4",
+            "player_id": "XRB44RCQ0A61BXG8OLVCRJ35L2",
+            "event_type": "profile_view",
+            "query_context": {
+                "tags": [
+                    "team-player"
+                ],
+                "max_age": 27,
+                "min_age": 21,
+                "position": "forward",
+                "max_skill": 87,
+                "min_skill": 54
+            },
+            "created_at": "2025-10-18T23:03:24.721419+02:00"
+        }
+    ],
+    "saved_searches": [
+        {
+            "id": 1,
+            "user_id": "2G5CP2BQUS1HIZ9BO7CFA5M8DA",
+            "search_name": "Test Search - Midfielders",
+            "filters": {
+                "position": "midfielder",
+                "max_skill": 90,
+                "min_skill": 70
+            },
+            "query_embedding": "[0,0,0,0,0,0,0,0,0.78072006,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.29277,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.39036003,0.39036003,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]",
+            "alert_frequency": "weekly",
+            "last_alerted_at": "2025-11-08T14:06:40.378023+01:00",
+            "created_at": "2025-11-08T14:04:37.984105+01:00",
+            "updated_at": "2025-11-08T14:04:37.984105+01:00"
+        },
+        {
+            "id": 2,
+            "user_id": "2G5CP2BQUS1HIZ9BO7CFA5M8DA",
+            "search_name": "Test Invalid Frequency",
+            "filters": {
+                "position": "forward"
+            },
+            "query_embedding": "[0.78072006,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.29277,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.39036003,0.39036003,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]",
+            "alert_frequency": "invalid_frequency",
+            "last_alerted_at": null,
+            "created_at": "2025-11-08T14:06:43.522671+01:00",
+            "updated_at": "2025-11-08T14:06:43.522671+01:00"
+        },
+        {
+            "id": 3,
+            "user_id": "4TGM92QJJKG73ZD565SL1GKGEU",
+            "search_name": "Test Search - Midfielders",
+            "filters": {
+                "position": "midfielder",
+                "max_skill": 90,
+                "min_skill": 70
+            },
+            "query_embedding": "[0,0,0,0,0,0,0,0,0.78072006,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.29277,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.39036003,0.39036003,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]",
+            "alert_frequency": "weekly",
+            "last_alerted_at": "2025-11-08T20:47:39.809690+01:00",
+            "created_at": "2025-11-08T20:44:48.172402+01:00",
+            "updated_at": "2025-11-08T20:44:48.172402+01:00"
+        },
+        {
+            "id": 4,
+            "user_id": "4TGM92QJJKG73ZD565SL1GKGEU",
+            "search_name": "Test Invalid Frequency",
+            "filters": {
+                "position": "forward"
+            },
+            "query_embedding": "[0.78072006,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.29277,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.39036003,0.39036003,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]",
+            "alert_frequency": "invalid_frequency",
+            "last_alerted_at": null,
+            "created_at": "2025-11-08T20:47:44.304010+01:00",
+            "updated_at": "2025-11-08T20:47:44.304010+01:00"
+        },
+        {
+            "id": 5,
+            "user_id": "FUN3J5OLJQT901B8PIPRRUSNXO",
+            "search_name": "Test Search - Midfielders",
+            "filters": {
+                "position": "midfielder",
+                "max_skill": 90,
+                "min_skill": 70
+            },
+            "query_embedding": "[0,0,0,0,0,0,0,0,0.78072006,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.29277,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.39036003,0.39036003,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]",
+            "alert_frequency": "weekly",
+            "last_alerted_at": "2025-11-08T20:58:35.448412+01:00",
+            "created_at": "2025-11-08T20:55:13.228335+01:00",
+            "updated_at": "2025-11-08T20:55:13.228335+01:00"
+        },
+        {
+            "id": 6,
+            "user_id": "FUN3J5OLJQT901B8PIPRRUSNXO",
+            "search_name": "Test Invalid Frequency",
+            "filters": {
+                "position": "forward"
+            },
+            "query_embedding": "[0.78072006,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.29277,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.39036003,0.39036003,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]",
+            "alert_frequency": "invalid_frequency",
+            "last_alerted_at": null,
+            "created_at": "2025-11-08T20:58:39.147901+01:00",
+            "updated_at": "2025-11-08T20:58:39.147901+01:00"
+        },
+        {
+            "id": 7,
+            "user_id": "A9ZMOPYP91NBTXZ4ATE0CU4WN3",
+            "search_name": "Test Search - Midfielders",
+            "filters": {
+                "position": "midfielder",
+                "max_skill": 90,
+                "min_skill": 70
+            },
+            "query_embedding": "[0,0,0,0,0,0,0,0,0.78072006,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.29277,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.39036003,0.39036003,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]",
+            "alert_frequency": "weekly",
+            "last_alerted_at": "2025-11-08T21:05:55.692533+01:00",
+            "created_at": "2025-11-08T21:03:28.724639+01:00",
+            "updated_at": "2025-11-08T21:03:28.724639+01:00"
+        },
+        {
+            "id": 8,
+            "user_id": "A9ZMOPYP91NBTXZ4ATE0CU4WN3",
+            "search_name": "Test Invalid Frequency",
+            "filters": {
+                "position": "forward"
+            },
+            "query_embedding": "[0.78072006,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.29277,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.39036003,0.39036003,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]",
+            "alert_frequency": "invalid_frequency",
+            "last_alerted_at": null,
+            "created_at": "2025-11-08T21:06:01.014493+01:00",
+            "updated_at": "2025-11-08T21:06:01.014493+01:00"
+        },
+        {
+            "id": 9,
+            "user_id": "BGC9TC8BA98E7Q7PQ5L7AR1APT",
+            "search_name": "Test Search - Midfielders",
+            "filters": {
+                "position": "midfielder",
+                "max_skill": 90,
+                "min_skill": 70
+            },
+            "query_embedding": "[0,0,0,0,0,0,0,0,0.78072006,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.29277,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.39036003,0.39036003,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]",
+            "alert_frequency": "weekly",
+            "last_alerted_at": "2025-11-08T21:13:34.531488+01:00",
+            "created_at": "2025-11-08T21:09:32.576397+01:00",
+            "updated_at": "2025-11-08T21:09:32.576397+01:00"
+        },
+        {
+            "id": 10,
+            "user_id": "BGC9TC8BA98E7Q7PQ5L7AR1APT",
+            "search_name": "Test Invalid Frequency",
+            "filters": {
+                "position": "forward"
+            },
+            "query_embedding": "[0.78072006,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.29277,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.39036003,0.39036003,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]",
+            "alert_frequency": "invalid_frequency",
+            "last_alerted_at": null,
+            "created_at": "2025-11-08T21:13:38.625656+01:00",
+            "updated_at": "2025-11-08T21:13:38.625656+01:00"
+        }
+    ]
+}

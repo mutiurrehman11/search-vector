@@ -8,6 +8,8 @@ from datetime import datetime, timedelta
 import hashlib
 from typing import Dict, List, Optional
 import os
+import sys
+import pytz
 from dotenv import load_dotenv
 from Pipeline.SearchPipeline import SearchPipeline
 
@@ -18,12 +20,14 @@ class Config:
     """Application configuration"""
     # Database
     DB_CONFIG = {
-        'host': os.getenv('DB_HOST', 'localhost'),
-        'database': os.getenv('DB_NAME', 'player_search'),
-        'user': os.getenv('DB_USER', 'postgres'),
-        'password': os.getenv('DB_PASSWORD', 'password'),
-        'port': os.getenv('DB_PORT', 5432)
+        'host': '167.86.115.58',
+        'port': 5432,
+        'dbname': 'prospects_dev',
+        'user': 'devuser',
+        'password': 'testdev123'
     }
+
+    DB_URI = os.getenv('DATABASE_URL')
 
     # Model settings
     MODEL_PATH = os.getenv('MODEL_PATH', 'reranker_model.pkl')
@@ -39,13 +43,32 @@ app.config.from_object(Config)
 CORS(app)
 
 # Setup logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+log_formatter = logging.Formatter(
+    '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
 )
-logger = logging.getLogger(__name__)
 
-# Initialize pipeline
+sys.stdout.reconfigure(line_buffering=True)
+
+# File handler
+file_handler = logging.FileHandler('app.log')
+file_handler.setFormatter(log_formatter)
+file_handler.setLevel(logging.INFO)
+
+# Console handler (this shows logs in terminal)
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(log_formatter)
+console_handler.setLevel(logging.INFO)
+
+# Get Flask’s root logger
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
+
+logging.getLogger('werkzeug').addHandler(console_handler)
+
+
+
 pipeline = SearchPipeline(Config.DB_CONFIG)
 
 logger.info("Search pipeline initialized")
@@ -56,9 +79,10 @@ class SearchRequestSchema(Schema):
     user_id = fields.Int(required=False)  # Optional - only needed for personalization and logging
 
     # Filters
+    role = fields.Str()
     position = fields.Str(validate=validate.OneOf(['forward', 'midfielder', 'defender', 'goalkeeper', 'any']))
-    min_skill = fields.Int(validate=validate.Range(min=1, max=10))
-    max_skill = fields.Int(validate=validate.Range(min=1, max=10))
+    min_skill = fields.Int(validate=validate.Range(min=1, max=100))
+    max_skill = fields.Int(validate=validate.Range(min=1, max=100))
     min_age = fields.Int(validate=validate.Range(min=13, max=100))
     max_age = fields.Int(validate=validate.Range(min=13, max=100))
     latitude = fields.Float(validate=validate.Range(min=-90, max=90))
@@ -80,15 +104,13 @@ class SearchRequestSchema(Schema):
 
 class EventLogSchema(Schema):
     """Schema for logging engagement events"""
-    user_id = fields.Int(required=True)
+    user_id = fields.Str(required=True)
     player_id = fields.Str(required=True)  # Changed from Int to Str for CHAR(26) IDs
     event_type = fields.Str(
         required=True,
         validate=validate.OneOf(['impression', 'profile_view', 'follow', 'message', 'save_to_playlist'])
     )
     query_context = fields.Dict(load_default=dict)
-    result_position = fields.Int()
-    session_id = fields.Str()
 
 
 class RecommendationRequestSchema(Schema):
@@ -123,10 +145,10 @@ def health_check():
     """Health check endpoint"""
     return jsonify({
         'status': 'healthy',
-        'timestamp': datetime.utcnow().isoformat(),
+        'timestamp': datetime.now(pytz.UTC).isoformat(),
         'services': {
             'database': 'connected',
-            'pgvector': pipeline.engine.pgvector_available if hasattr(pipeline, 'engine') else False,
+            'pgvector': pipeline.search_engine.pgvector_available,
             'search_pipeline': 'initialized'
         }
     })
@@ -155,6 +177,7 @@ def search_players():
     """
     try:
         data = request.validated_data
+        logger.info(f"Search request received: {data}")
 
         # Extract filters for the search
         filters = {
@@ -162,12 +185,18 @@ def search_players():
             if k not in ['user_id', 'limit', 'offset']
         }
 
+        if 'min_age' in filters:
+            filters['min_age'] = int(filters['min_age'])
+        if 'max_age' in filters:
+            filters['max_age'] = int(filters['max_age'])
+
         # Execute search using the new pipeline
         search_results = pipeline.search_players(
             filters=filters,
             limit=data.get('limit', Config.DEFAULT_RESULTS),
             offset=data.get('offset', 0)
         )
+        logger.info(f"Search results from pipeline: {search_results}")
 
         # Format response
         formatted_results = []
@@ -183,6 +212,7 @@ def search_players():
                 'status': player.get('status', 'active'),
                 'match_score': player.get('match_score', 0),
                 'similarity_score': player.get('similarity_score'),
+                'rerank_score': player.get('rerank_score'),
                 'distance_km': player.get('distance_km')
             }
             formatted_results.append(formatted_player)
@@ -235,6 +265,7 @@ def log_event():
     try:
         data = request.validated_data
 
+        print(f"Logging event: {data}")
         # Log event asynchronously (use Celery in production)
         pipeline.log_interaction(
             user_id=data['user_id'],
@@ -270,6 +301,41 @@ def get_recommendations(player_id: str):
         filters = {
             'seed_player_ids': [player_id]
         }
+
+        # Validate player_id format (ULID is 26 characters)
+        if not player_id or len(player_id) != 26:
+            return jsonify({
+                'recommendations': [],
+                'error': 'Invalid player ID format',
+                'message': 'Player ID must be a 26-character ULID'
+            }), 400
+        
+        # Validate limit parameter
+        try:
+            limit = min(int(request.args.get('limit', 10)), 50)
+        except ValueError:
+            return jsonify({
+                'recommendations': [],
+                'error': 'Invalid limit parameter',
+                'message': 'Limit must be an integer'
+            }), 400
+        
+        # Check if player exists
+        with pipeline.search_engine.conn.cursor() as cur:
+            cur.execute("""
+                SELECT id FROM players 
+                WHERE id = %s 
+                AND status = 'active' 
+                AND deleted_at IS NULL
+            """, (player_id,))
+            
+            if not cur.fetchone():
+                return jsonify({
+                    'recommendations': [],
+                    'error': 'Player not found',
+                    'message': f'No active player found with ID: {player_id}',
+                    'player_id': player_id
+                }), 404
         
         recommendations = pipeline.search_players(
             filters=filters,
@@ -298,6 +364,7 @@ def get_recommendations(player_id: str):
     except Exception as e:
         logger.error(f"Recommendations error: {str(e)}", exc_info=True)
         return jsonify({
+            'recommendations': [],
             'error': 'Recommendations failed',
             'message': str(e)
         }), 500
@@ -332,36 +399,6 @@ def train_ml_model():
             'message': str(e)
         }), 500
 
-
-@app.route('/api/v1/recommendations/personalized/<int:user_id>', methods=['GET'])
-def get_personalized_recommendations(user_id: int):
-    """
-    Get personalized recommendations for a user based on their interaction history
-    
-    GET /api/v1/recommendations/personalized/123?limit=20
-    """
-    try:
-        limit = request.args.get('limit', 20, type=int)
-        limit = min(limit, 50)  # Cap at 50
-        
-        logger.info(f"Getting personalized recommendations for user {user_id}")
-        result = pipeline.get_personalized_recommendations(str(user_id), limit)
-        
-        return jsonify({
-            'recommendations': result['results'],
-            'total_count': result['total_count'],
-            'metadata': result['metadata'],
-            'telemetry': result.get('telemetry', {})
-        })
-        
-    except Exception as e:
-        logger.error(f"Personalized recommendations error: {str(e)}", exc_info=True)
-        return jsonify({
-            'error': 'Personalized recommendations failed',
-            'message': str(e)
-        }), 500
-
-
 @app.route('/api/v1/saved-searches', methods=['POST'])
 def save_search():
     """
@@ -369,17 +406,22 @@ def save_search():
 
     POST /api/v1/saved-searches
     {
-        "user_id": 123,
+        "user_id": "abc-123",
         "search_name": "Competitive midfielders near me",
         "filters": {...},
         "alert_frequency": "weekly"
     }
     """
     try:
-        data = request.validated_data
+        data = request.json
+        if data["alert_frequency"] not in ["daily", "weekly"]:
+            return jsonify({
+                'error': 'Invalid alert frequency',
+                'message': 'Alert frequency must be "daily" or "weekly"'
+            }), 400
 
         saved_search_id = pipeline.saved_search_mgr.save_search(
-            user_id=data['user_id'],
+            user_id=str(data['user_id']),
             search_name=data['search_name'],
             filters=data['filters'],
             alert_frequency=data['alert_frequency']
@@ -399,33 +441,28 @@ def save_search():
         }), 500
 
 
-@app.route('/api/v1/saved-searches/<int:user_id>', methods=['GET'])
-def get_saved_searches(user_id: int):
+@app.route('/api/v1/saved-searches/<int:saved_search_id>/new-matches', methods=['GET'])
+def get_new_matches_for_saved_search(saved_search_id):
+    """Get new matches for a saved search since the last alert."""
+    try:
+        new_matches = pipeline.saved_search_mgr.get_new_matches(saved_search_id)
+        return jsonify(new_matches)
+
+    except Exception as e:
+        app.logger.error(f"Failed to get new matches: {e}")
+        return jsonify({"error": "Failed to get new matches", "message": str(e)}), 500
+
+
+@app.route('/api/v1/saved-searches/<user_id>', methods=['GET'])
+def get_saved_searches(user_id):
     """
     Get all saved searches for a user
 
     GET /api/v1/saved-searches/123
     """
     try:
-        with pipeline.search_engine.conn.cursor() as cur:
-            cur.execute("""
-                SELECT id, search_name, filters, alert_frequency, 
-                       last_alerted_at, created_at
-                FROM saved_searches
-                WHERE user_id = %s AND is_active = true
-                ORDER BY created_at DESC;
-            """, (user_id,))
-
-            saved_searches = []
-            for row in cur.fetchall():
-                saved_searches.append({
-                    'id': row[0],
-                    'search_name': row[1],
-                    'filters': row[2],
-                    'alert_frequency': row[3],
-                    'last_alerted_at': row[4].isoformat() if row[4] else None,
-                    'created_at': row[5].isoformat()
-                })
+        logger.info(f"Fetching saved searches for user_id: {user_id}")
+        saved_searches = pipeline.saved_search_mgr.get_saved_searches(str(user_id))
 
         return jsonify({
             'saved_searches': saved_searches,
@@ -487,8 +524,8 @@ def train_model():
         # TODO: Add authentication
 
         logger.info("Starting model training...")
-        pipeline.train_reranker()
-        pipeline.reranker.save_model(Config.MODEL_PATH)
+        pipeline.train_ml_model()
+        pipeline.ml_reranker.save_model(Config.MODEL_PATH)
 
         return jsonify({
             'status': 'success',
@@ -521,7 +558,11 @@ def internal_error(error):
     }), 500
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
+    # For production, use a production-ready WSGI server like Gunicorn or uWSGI
+    # Example with Gunicorn: gunicorn --workers 4 --bind 0.0.0.0:5000 app:app
+    # app.run(debug=False, host='0.0.0.0', threaded=False)
+
     import sys
 
     if len(sys.argv) > 1:
@@ -534,8 +575,8 @@ if __name__ == '__main__':
 
         elif command == 'train-model':
             print("Training re-ranking model...")
-            pipeline.train_reranker()
-            pipeline.reranker.save_model(Config.MODEL_PATH)
+            pipeline.train_ml_model()
+            pipeline.ml_reranker.save_model(Config.MODEL_PATH)
             print(f"Model trained and saved to {Config.MODEL_PATH}")
 
         elif command == 'index-players':

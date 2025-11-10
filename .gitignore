@@ -5,3 +5,4 @@
 /.venv
 /pgvector
 /Pipeline/__pycache__
+/__pycache__

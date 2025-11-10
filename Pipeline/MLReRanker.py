@@ -1,7 +1,7 @@
 import numpy as np
 import json
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 import lightgbm as lgb
 from sklearn.preprocessing import StandardScaler
 import pickle
@@ -35,21 +35,27 @@ class MLReRanker:
         if model_path and os.path.exists(model_path):
             self.load_model(model_path)
             logger.info(f"Loaded ML re-ranking model from {model_path}")
+        else:
+            # Fit scaler with dummy data to avoid errors if not trained
+            self.scaler.fit(np.zeros((1, len(self.feature_names))))
 
     def extract_features(self, player: Dict, query_context: Dict) -> List[float]:
         """Extract features for ML re-ranking"""
         features = []
         
-        # Vector similarity (from previous stage)
-        features.append(player.get('similarity_score', 0.0))
+        # Vector similarity (from previous stage) - default to 0.5 if missing
+        features.append(player.get('similarity_score', 0.5))
         
         # Skill match score
         skill_match = self._calculate_skill_match(player, query_context)
         features.append(skill_match)
         
-        # Location distance (normalized)
-        distance = player.get('distance_km', 1000)  # Default to far if unknown
-        normalized_distance = max(0, 1 - (distance / 100))  # Normalize to 0-1
+        # Location distance (normalized) - handle missing values better
+        distance = player.get('distance_km')
+        if distance is None or distance > 100:
+            normalized_distance = 0.0  # Unknown or far = low score
+        else:
+            normalized_distance = max(0, 1 - (distance / 100))
         features.append(normalized_distance)
         
         # Availability overlap (placeholder - would need real availability data)
@@ -83,11 +89,15 @@ class MLReRanker:
         avg_skill = np.mean(list(player_skills.values()))
         
         # Check if query has skill requirements
-        min_skill = query_context.get('min_skill', 0)
-        max_skill = query_context.get('max_skill', 10)
-        
+        min_skill = query_context.get('min_skill')
+        max_skill = query_context.get('max_skill')
+
+        # Handle None values for skill filters
+        min_skill = min_skill if min_skill is not None else 0
+        max_skill = max_skill if max_skill is not None else 100
+
         if min_skill <= avg_skill <= max_skill:
-            return min(1.0, avg_skill / 10.0)
+            return min(1.0, avg_skill / 100.0)
         else:
             return 0.3  # Penalty for not matching skill range
     
@@ -122,11 +132,17 @@ class MLReRanker:
         
         return sum(completeness_factors) / len(completeness_factors)
 
-    def prepare_training_data(self, conn):
-        """Prepare training data from engagement events"""
+    def prepare_training_data(self, conn) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Prepare training data from engagement events
+        
+        Returns:
+            X: Feature matrix (n_samples, n_features)
+            y: Target labels (n_samples,)
+            group_counts: Array of query/group sizes that sum to n_samples
+        """
         try:
             with conn.cursor() as cur:
-                # Get engagement data with search context
+                # Get engagement data with search context - ORDERED BY USER AND TIME
                 cur.execute("""
                     SELECT 
                         pee.user_id,
@@ -141,10 +157,14 @@ class MLReRanker:
                         (SELECT json_object_agg(ps.skill, ps.level) 
                          FROM player_skills ps WHERE ps.player_id = p.id) as skills,
                         (SELECT array_agg(pt.position) 
-                         FROM player_teams pt WHERE pt.player_id = p.id) as positions
+                         FROM player_teams pt WHERE pt.player_id = p.id) as positions,
+                        p.tags,
+                        p.embedding
                     FROM player_engagement_events pee
                     JOIN players p ON p.id = pee.player_id
                     WHERE pee.created_at > NOW() - INTERVAL '30 days'
+                    AND p.status = 'active'
+                    AND p.deleted_at IS NULL
                     ORDER BY pee.user_id, pee.created_at
                 """)
                 
@@ -154,14 +174,16 @@ class MLReRanker:
                     logger.warning("No training data available")
                     return np.array([]), np.array([]), np.array([])
                 
-                X, y, groups = [], [], []
-                current_group = 0
+                X, y, group_ids = [], [], []
                 current_user = None
+                current_group_id = -1
                 
                 for row in rows:
                     user_id = row[0]
+                    
+                    # Increment group ID when user changes
                     if user_id != current_user:
-                        current_group += 1
+                        current_group_id += 1
                         current_user = user_id
                     
                     # Create player dict
@@ -172,7 +194,9 @@ class MLReRanker:
                         'location': json.loads(row[6]) if row[6] else {},
                         'age': row[8],
                         'skills': json.loads(row[9]) if row[9] else {},
-                        'positions': row[10] or []
+                        'positions': row[10] or [],
+                        'tags': row[11] or [],
+                        'similarity_score': 0.5  # Default if no embedding
                     }
                     
                     # Query context
@@ -192,22 +216,42 @@ class MLReRanker:
                         'message': 4
                     }
                     y.append(engagement_scores.get(event_type, 0))
-                    groups.append(current_group)
+                    group_ids.append(current_group_id)
                 
-                return np.array(X), np.array(y), np.array(groups)
+                # Convert to numpy arrays
+                X = np.array(X)
+                y = np.array(y)
+                group_ids = np.array(group_ids)
+                
+                # CRITICAL: Convert group IDs to group counts
+                unique_groups, group_counts = np.unique(group_ids, return_counts=True)
+                
+                logger.info(f"Training data prepared: {len(X)} samples, {len(unique_groups)} query groups")
+                logger.info(f"Group sizes - min: {group_counts.min()}, max: {group_counts.max()}, mean: {group_counts.mean():.1f}")
+                
+                return X, y, group_counts
                 
         except Exception as e:
-            logger.error(f"Error preparing training data: {e}")
+            logger.error(f"Error preparing training data: {e}", exc_info=True)
             return np.array([]), np.array([]), np.array([])
 
-    def train(self, conn):
+    def train(self, conn) -> bool:
         """Train LightGBM ranker on engagement data"""
         logger.info("Starting ML re-ranker training...")
         
-        X, y, groups = self.prepare_training_data(conn)
+        X, y, group_counts = self.prepare_training_data(conn)
         
         if len(X) == 0:
             logger.warning("No training data available yet")
+            return False
+        
+        # Validate minimum requirements
+        if len(group_counts) < 2:
+            logger.warning(f"Insufficient query groups for training: {len(group_counts)} (need at least 2)")
+            return False
+        
+        if len(X) < 10:
+            logger.warning(f"Insufficient training samples: {len(X)} (need at least 10)")
             return False
         
         try:
@@ -215,11 +259,11 @@ class MLReRanker:
             X_scaled = self.scaler.fit_transform(X)
             
             # Create LightGBM dataset with query groups
-            unique_groups, group_counts = np.unique(groups, return_counts=True)
             train_data = lgb.Dataset(
                 X_scaled,
                 label=y,
-                group=group_counts
+                group=group_counts,  # FIXED: Pass group counts, not IDs
+                feature_name=self.feature_names
             )
             
             # LambdaRank parameters
@@ -233,27 +277,38 @@ class MLReRanker:
                 'bagging_fraction': 0.8,
                 'bagging_freq': 5,
                 'verbose': -1,
-                'force_row_wise': True
+                'force_row_wise': True,
+                'lambdarank_norm': True  # Normalize for unbalanced queries
             }
+            
+            logger.info(f"Training LightGBM model with {len(group_counts)} query groups")
             
             self.model = lgb.train(
                 params,
                 train_data,
                 num_boost_round=100,
                 valid_sets=[train_data],
-                callbacks=[lgb.early_stopping(10)]
+                callbacks=[lgb.early_stopping(10, verbose=False)]
             )
+            
+            # Log feature importance
+            importance = self.model.feature_importance(importance_type='gain')
+            for fname, imp in zip(self.feature_names, importance):
+                logger.info(f"Feature importance - {fname}: {imp:.4f}")
             
             logger.info("ML re-ranking model trained successfully")
             return True
             
         except Exception as e:
-            logger.error(f"Error training model: {e}")
+            logger.error(f"Error training model: {e}", exc_info=True)
             return False
 
     def rerank(self, players: List[Dict], query_context: Dict) -> List[Dict]:
         """Re-rank players using trained model"""
-        if not self.model or not players:
+        if not self.model or not players or not hasattr(self.scaler, 'mean_'):
+            return players
+        
+        if len(players) == 0:
             return players
         
         try:
@@ -272,15 +327,16 @@ class MLReRanker:
             # Add scores and sort
             for player, score in zip(players, scores):
                 player['ml_score'] = float(score)
+                player['rerank_score'] = float(score)  # Alias for compatibility
             
             # Sort by ML score (higher is better)
             reranked = sorted(players, key=lambda p: p['ml_score'], reverse=True)
             
-            logger.info(f"Re-ranked {len(players)} players using ML model")
+            logger.info(f"Re-ranked {len(players)} players using ML model (score range: {scores.min():.3f} - {scores.max():.3f})")
             return reranked
             
         except Exception as e:
-            logger.error(f"Error in ML re-ranking: {e}")
+            logger.error(f"Error in ML re-ranking: {e}", exc_info=True)
             return players
 
     def save_model(self, path: str):
@@ -290,6 +346,11 @@ class MLReRanker:
             return
         
         try:
+            # Create directory if it doesn't exist
+            dir_path = os.path.dirname(path)
+            if dir_path:  # Only create if there's a directory component
+                os.makedirs(dir_path, exist_ok=True)
+            
             model_data = {
                 'model': self.model,
                 'scaler': self.scaler,
@@ -302,9 +363,9 @@ class MLReRanker:
             logger.info(f"Model saved to {path}")
             
         except Exception as e:
-            logger.error(f"Error saving model: {e}")
+            logger.error(f"Error saving model: {e}", exc_info=True)
 
-    def load_model(self, path: str):
+    def load_model(self, path: str) -> bool:
         """Load a trained model and scaler"""
         try:
             with open(path, 'rb') as f:
@@ -318,5 +379,5 @@ class MLReRanker:
             return True
             
         except Exception as e:
-            logger.error(f"Error loading model: {e}")
+            logger.error(f"Error loading model: {e}", exc_info=True)
             return False

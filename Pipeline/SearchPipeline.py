@@ -1,15 +1,18 @@
+"""
+Corrected SearchPipeline - Fixed undefined variables and missing methods
+"""
+
 import numpy as np
 import json
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 from datetime import datetime
 import time
 
-from .PipelineCompat import CompatPlayerSearchEngine
-from .EmbeddingGenerator import CompatPlayerEmbeddingGenerator
-from .QueryBuilder import QueryVectorBuilder
+from .EmbeddingGenerator import PlayerEmbeddingGenerator
+from .Pipeline import PlayerSearchEngine, ExplainabilityEngine, RecommendationEngine
+from .Pipeline import SavedSearchManager
 from .MLReRanker import MLReRanker
-from .RecommendationEngine import RecommendationEngine
 
 logger = logging.getLogger(__name__)
 
@@ -17,34 +20,34 @@ logger = logging.getLogger(__name__)
 class SearchPipeline:
     """Enhanced search pipeline with ML re-ranking and recommendations"""
     
-    def __init__(self, db_config: Dict):
+    def __init__(self, db_config: Dict, model_path: str = "models/reranker.pkl"):
         self.db_config = db_config
+        self.config = db_config
         
-        self.search_engine = CompatPlayerSearchEngine(db_config)
-        self.embedding_generator = CompatPlayerEmbeddingGenerator()
-        self.query_builder = QueryVectorBuilder()
+        self.search_engine = PlayerSearchEngine(db_config)
+        if not self.search_engine.connect():
+            logger.error("Failed to connect to the database.")
+            raise ConnectionError("Database connection failed.")
+        
+        self.embedding_generator = PlayerEmbeddingGenerator()
         
         # Initialize ML components
-        self.ml_reranker = MLReRanker(model_path="models/reranker.pkl")
-        self.recommendation_engine = RecommendationEngine()
+        self.ml_reranker = MLReRanker()
+        try:
+            self.ml_reranker.load_model("models/reranker.pkl")
+            logger.info("Successfully loaded ML re-ranking model.")
+        except FileNotFoundError:
+            logger.warning("Reranker model not found. Proceeding without ML re-ranking.")
+        except Exception as e:
+            logger.error(f"Error loading reranker model: {e}")
+        
+        self.recommendation_engine = RecommendationEngine(self.search_engine)
+        self.saved_search_mgr = SavedSearchManager(self.search_engine)
 
         self.max_candidates = 1000
         self.default_limit = 20
         
-        # Build recommendation index on startup
-        self._initialize_ml_components()
-        
         logger.info("SearchPipeline initialized")
-
-    def _initialize_ml_components(self):
-        """Initialize ML components with existing data"""
-        try:
-            # Build recommendation index
-            self.recommendation_engine.build_player_index(self.search_engine.conn)
-            logger.info("ML components initialized successfully")
-        except Exception as e:
-            logger.error(f"Error initializing ML components: {e}")
-            # Continue without ML features if initialization fails
 
     def train_ml_model(self) -> Dict:
         """Train the ML re-ranking model using engagement data"""
@@ -53,17 +56,12 @@ class SearchPipeline:
         try:
             logger.info("Starting ML model training...")
             
-            # Train the re-ranking model
             success = self.ml_reranker.train(self.search_engine.conn)
             
             if success:
-                # Save the trained model
                 import os
                 os.makedirs("models", exist_ok=True)
                 self.ml_reranker.save_model("models/reranker.pkl")
-                
-                # Refresh recommendation index
-                self.recommendation_engine.refresh_index(self.search_engine.conn)
                 
                 total_time = time.time() - start_time
                 logger.info(f"ML model training completed successfully in {total_time:.2f}s")
@@ -105,16 +103,9 @@ class SearchPipeline:
             logger.info("Stage 1: Filter-based candidate retrieval")
             filter_start = time.time()
             
-            candidates = self.search_engine.search_players_by_filters(
-                filters, 
-                limit=min(self.max_candidates, limit * 10),
-                offset=offset
-            )
+            candidate_ids = self.search_engine.strict_filter_stage(filters)
             
-            filter_time = time.time() - filter_start
-            logger.info(f"Filter search returned {len(candidates)} candidates in {filter_time:.3f}s")
-            
-            if not candidates:
+            if not candidate_ids:
                 return {
                     'results': [],
                     'total_count': 0,
@@ -126,63 +117,65 @@ class SearchPipeline:
                     },
                     'telemetry': {
                         'total_time_ms': (time.time() - start_time) * 1000,
-                        'filter_time_ms': filter_time * 1000,
+                        'filter_time_ms': (time.time() - filter_start) * 1000,
                         'vector_time_ms': 0,
                         'rerank_time_ms': 0
                     }
                 }
+
+            candidates = self.search_engine.get_players_by_ids(candidate_ids)
+            filter_time = time.time() - filter_start
+            logger.info(f"Filter search returned {len(candidates)} candidates in {filter_time:.3f}s")
+            
             vector_time = 0
             rerank_time = 0
             reranked = False
             ml_reranked = False
             
+            # Stage 2: Vector similarity (if beneficial)
             if len(candidates) > limit and self._should_use_vector_search(filters):
                 logger.info("Stage 2: Vector similarity reranking")
                 vector_start = time.time()
                 
-                query_vector = self.query_builder.build_query_vector(filters)
+                query_vector = self.search_engine.query_builder.build_from_filters(filters)
+                top_k_vector = int(self.config.get('vector_search_top_k', 100))
                 
-                # Get candidate IDs
-                candidate_ids = [c['id'] for c in candidates]
-                
-                # Perform vector similarity search on candidates
-                vector_results = self.search_engine.vector_similarity_search(
-                    query_vector, 
-                    candidate_ids=candidate_ids,
-                    top_k=limit * 2
+                # Get vector similarity results
+                vector_results = self.search_engine.vector_similarity_stage(
+                    query_vector,
+                    [c['id'] for c in candidates],
+                    top_k=min(len(candidates), top_k_vector * 2)
                 )
                 
                 if vector_results:
-                    # Merge filter results with vector scores
+                    # Merge filter and vector results
                     candidates = self._merge_filter_and_vector_results(candidates, vector_results)
                     reranked = True
                 
                 vector_time = time.time() - vector_start
                 logger.info(f"Vector reranking completed in {vector_time:.3f}s")
+            
+            # Stage 3: ML Re-ranking (if model available)
+            if self.ml_reranker.model and candidates and len(candidates) > 1:
+                logger.info("Stage 3: ML re-ranking")
+                rerank_start = time.time()
                 
-                # Stage 3: ML Re-ranking (if model is available)
-                if self.ml_reranker.model and len(candidates) > 1:
-                    logger.info("Stage 3: ML re-ranking")
-                    rerank_start = time.time()
-                    
-                    # Prepare query context for ML features
-                    query_context = {
-                        'min_skill': filters.get('min_skill'),
-                        'max_skill': filters.get('max_skill'),
-                        'tags': filters.get('tags', []),
-                        'location': filters.get('location'),
-                        'positions': filters.get('positions', [])
-                    }
-                    
-                    # Apply ML re-ranking
-                    candidates = self.ml_reranker.rerank(candidates, query_context)
-                    ml_reranked = True
-                    
-                    rerank_time = time.time() - rerank_start
-                    logger.info(f"ML re-ranking completed in {rerank_time:.3f}s")
+                query_context = {
+                    'min_skill': filters.get('min_skill'),
+                    'max_skill': filters.get('max_skill'),
+                    'tags': filters.get('tags', []),
+                    'location': filters.get('location'),
+                    'positions': filters.get('positions', [])
+                }
+                
+                candidates = self.ml_reranker.rerank(candidates, query_context)
+                ml_reranked = True
+                
+                rerank_time = time.time() - rerank_start
+                logger.info(f"ML re-ranking completed in {rerank_time:.3f}s")
             
             # Final result preparation
-            final_results = candidates[:limit]
+            final_results = candidates[offset:offset + limit]
             
             # Add computed fields
             for result in final_results:
@@ -191,8 +184,6 @@ class SearchPipeline:
                     result['distance_km'] = self._calculate_distance(result, filters)
                 except Exception as e:
                     logger.error(f"Error calculating fields for player {result.get('id', 'unknown')}: {e}")
-                    logger.error(f"Player location: {result.get('location', {})}")
-                    logger.error(f"Filters: {filters}")
                     result['match_score'] = 0.5
                     result['distance_km'] = None
             
@@ -202,11 +193,11 @@ class SearchPipeline:
                 'results': final_results,
                 'total_count': len(candidates),
                 'metadata': {
-                    'search_type': 'hybrid' if reranked else 'filter_only',
+                    'search_type': 'ml_reranked' if ml_reranked else ('hybrid' if reranked else 'filter_only'),
                     'candidates_found': len(candidates),
                     'reranked': reranked,
                     'ml_reranked': ml_reranked,
-                    'pgvector_available': self.search_engine._check_pgvector_availability()
+                    'pgvector_available': self.search_engine.pgvector_available
                 },
                 'telemetry': {
                     'total_time_ms': total_time * 1000,
@@ -218,6 +209,8 @@ class SearchPipeline:
             
         except Exception as e:
             logger.error(f"Search failed: {e}")
+            import traceback
+            traceback.print_exc()
             return {
                 'results': [],
                 'total_count': 0,
@@ -236,74 +229,39 @@ class SearchPipeline:
             }
     
     def get_recommendations(self, player_id: str, limit: int = 20) -> Dict:
-        """Get player recommendations using ML-based similarity"""
+        """Get player recommendations using similarity"""
         start_time = time.time()
         
         try:
-            # Use ML recommendation engine if available
-            if self.recommendation_engine.is_fitted:
-                logger.info(f"Getting ML-based recommendations for player {player_id}")
-                recommendations = self.recommendation_engine.get_similar_players(player_id, limit)
-                
-                if recommendations:
-                    # Enrich with player details
-                    enriched_recommendations = []
-                    for rec in recommendations:
-                        player_details = self.search_engine.get_player_by_id(rec['player_id'])
-                        if player_details:
-                            player_details.update({
-                                'similarity_score': rec['similarity_score'],
-                                'recommendation_reason': f'Similar profile (rank #{rec["rank"]})',
-                                'rank': rec['rank']
-                            })
-                            enriched_recommendations.append(player_details)
-                    
-                    total_time = time.time() - start_time
-                    return {
-                        'results': enriched_recommendations,
-                        'total_count': len(enriched_recommendations),
-                        'metadata': {
-                            'recommendation_type': 'ml_similarity',
-                            'algorithm': 'k_nearest_neighbors'
-                        },
-                        'telemetry': {
-                            'total_time_ms': total_time * 1000
-                        }
-                    }
+            logger.info(f"Getting recommendations for player {player_id}")
+            recommendations = self.recommendation_engine.more_like_this(player_id, limit)
             
-            # Fallback to vector similarity if ML engine not available
-            logger.info(f"Using vector similarity fallback for player {player_id}")
-            target_embedding = self.search_engine.get_player_embedding(player_id)
-            
-            if target_embedding is None:
-                logger.warning(f"No embedding found for player {player_id}")
+            if not recommendations:
+                logger.info(f"No recommendations found for player {player_id}")
                 return {
                     'results': [],
                     'total_count': 0,
-                    'error': 'Player embedding not found',
-                    'metadata': {'recommendation_type': 'failed'}
+                    'metadata': {
+                        'recommendation_type': 'similarity_based',
+                        'reason': 'no_similar_players_found'
+                    }
                 }
             
-            # Perform vector similarity search
-            similar_players = self.search_engine.vector_similarity_search(
-                target_embedding,
-                top_k=limit + 1  # +1 to exclude the target player
-            )
+            # Enrich with full player details
+            player_ids = [r['id'] for r in recommendations]
+            enriched = self.search_engine.get_players_by_ids(player_ids)
             
-            # Remove the target player from results
-            recommendations = [p for p in similar_players if p['id'] != player_id][:limit]
-            
-            # Add recommendation scores
-            for i, rec in enumerate(recommendations):
-                rec['similarity_score'] = rec.get('similarity_score', 0)
-                rec['recommendation_reason'] = 'Similar playing style and attributes'
-                rec['rank'] = i + 1
+            # Merge similarity scores
+            similarity_map = {r['id']: r.get('similarity', 0) for r in recommendations}
+            for player in enriched:
+                player['similarity_score'] = similarity_map.get(player['id'], 0)
+                player['recommendation_reason'] = 'Similar playing style and attributes'
             
             total_time = time.time() - start_time
             
             return {
-                'results': recommendations,
-                'total_count': len(recommendations),
+                'results': enriched,
+                'total_count': len(enriched),
                 'metadata': {
                     'recommendation_type': 'similarity_based',
                     'target_player_id': player_id,
@@ -316,71 +274,8 @@ class SearchPipeline:
             
         except Exception as e:
             logger.error(f"Recommendations failed: {e}")
-            return {
-                'results': [],
-                'total_count': 0,
-                'error': str(e),
-                'metadata': {'recommendation_type': 'failed'}
-            }
-    
-    def get_personalized_recommendations(self, user_id: str, limit: int = 20) -> Dict:
-        """Get personalized recommendations based on user's interaction history"""
-        start_time = time.time()
-        
-        try:
-            if not self.recommendation_engine.is_fitted:
-                logger.warning("Recommendation engine not available")
-                return {
-                    'results': [],
-                    'total_count': 0,
-                    'error': 'Recommendation engine not initialized',
-                    'metadata': {'recommendation_type': 'failed'}
-                }
-            
-            logger.info(f"Getting personalized recommendations for user {user_id}")
-            recommendations = self.recommendation_engine.get_recommendations_for_user(
-                self.search_engine.conn, user_id, limit
-            )
-            
-            if not recommendations:
-                logger.info(f"No personalized recommendations found for user {user_id}")
-                return {
-                    'results': [],
-                    'total_count': 0,
-                    'metadata': {
-                        'recommendation_type': 'personalized',
-                        'reason': 'no_interaction_history'
-                    }
-                }
-            
-            # Enrich with player details
-            enriched_recommendations = []
-            for rec in recommendations:
-                player_details = self.search_engine.get_player_by_id(rec['player_id'])
-                if player_details:
-                    player_details.update({
-                        'similarity_score': rec['similarity_score'],
-                        'recommendation_reason': rec.get('reason', 'Based on your activity'),
-                        'rank': rec['rank'],
-                        'recommendation_count': rec.get('recommendation_count', 1)
-                    })
-                    enriched_recommendations.append(player_details)
-            
-            total_time = time.time() - start_time
-            return {
-                'results': enriched_recommendations,
-                'total_count': len(enriched_recommendations),
-                'metadata': {
-                    'recommendation_type': 'personalized',
-                    'algorithm': 'collaborative_filtering'
-                },
-                'telemetry': {
-                    'total_time_ms': total_time * 1000
-                }
-            }
-            
-        except Exception as e:
-            logger.error(f"Personalized recommendation failed: {e}")
+            import traceback
+            traceback.print_exc()
             return {
                 'results': [],
                 'total_count': 0,
@@ -393,7 +288,6 @@ class SearchPipeline:
         start_time = time.time()
         
         try:
-            # Get all players without embeddings or with outdated embeddings
             players = self._get_players_needing_embeddings(batch_size)
             
             if not players:
@@ -411,10 +305,7 @@ class SearchPipeline:
             
             for player in players:
                 try:
-                    # Generate embedding
                     embedding = self.embedding_generator.generate_embedding(player)
-                    
-                    # Store embedding
                     self.search_engine.store_player_embedding(player['id'], embedding)
                     
                     success += 1
@@ -450,8 +341,7 @@ class SearchPipeline:
             }
     
     def _should_use_vector_search(self, filters: Dict) -> bool:
-        """Determine if vector search should be used based on filters"""
-        # Use vector search if we have specific preferences that benefit from similarity
+        """Determine if vector search should be used"""
         vector_beneficial_filters = [
             'position', 'min_skill', 'max_skill', 'latitude', 'longitude'
         ]
@@ -461,19 +351,19 @@ class SearchPipeline:
     def _merge_filter_and_vector_results(self, filter_results: List[Dict], vector_results: List[Dict]) -> List[Dict]:
         """Merge filter-based and vector similarity results"""
         # Create lookup for vector scores
-        vector_scores = {r['id']: r.get('similarity_score', 1.0) for r in vector_results}
+        vector_scores = {r['id']: r.get('similarity_score', 0) for r in vector_results}
         
-        # Add vector scores to filter results and sort by similarity
+        # Add similarity scores to filter results
         for result in filter_results:
-            result['similarity_score'] = vector_scores.get(result['id'], 1.0)
+            result['similarity_score'] = vector_scores.get(result['id'], 0.0)
         
-        # Sort by similarity score (lower is better for distance-based similarity)
-        filter_results.sort(key=lambda x: x.get('similarity_score', 1.0))
+        # Sort by similarity score
+        filter_results.sort(key=lambda x: x.get('similarity_score', 0.0), reverse=True)
         
         return filter_results
     
     def _calculate_match_score(self, player: Dict, filters: Dict) -> float:
-        """Calculate a match score for the player based on filters"""
+        """Calculate match score for the player"""
         score = 0.0
         factors = 0
         
@@ -485,25 +375,23 @@ class SearchPipeline:
             factors += 1
         
         # Skill level match
-        avg_skill = player.get('avg_skill_level', 0)
+        avg_skill = float(player.get('avg_skill_level', 0))
         min_skill = filters.get('min_skill', 0)
         max_skill = filters.get('max_skill', 100)
         
         if min_skill <= avg_skill <= max_skill:
-            # Perfect match gets full score
             skill_range = max_skill - min_skill
             if skill_range > 0:
-                # Closer to center of range gets higher score
                 center = (min_skill + max_skill) / 2
                 distance_from_center = abs(avg_skill - center)
                 skill_score = 1.0 - (distance_from_center / (skill_range / 2))
-                score += max(skill_score, 0.5)  # Minimum 0.5 for being in range
+                score += max(skill_score, 0.5)
             else:
                 score += 1.0
         factors += 1
         
         # Age match
-        age = player.get('age', 0)
+        age = int(player.get('age', 0))
         min_age = filters.get('min_age', 0)
         max_age = filters.get('max_age', 100)
         
@@ -518,14 +406,22 @@ class SearchPipeline:
         if not (filters.get('latitude') and filters.get('longitude')):
             return None
         
-        player_location = player.get('location', {})
+        player_location = player.get('location')
+        if not player_location:
+            return None
+        
+        # Parse location if it's a string
+        if isinstance(player_location, str):
+            try:
+                player_location = json.loads(player_location)
+            except:
+                return None
+        
         if not (player_location.get('latitude') and player_location.get('longitude')):
             return None
         
-        # Simple haversine distance calculation
         from math import radians, cos, sin, asin, sqrt
         
-        # Convert to float to handle Decimal types from database
         lat1, lon1 = radians(float(filters['latitude'])), radians(float(filters['longitude']))
         lat2, lon2 = radians(float(player_location['latitude'])), radians(float(player_location['longitude']))
         
@@ -533,7 +429,7 @@ class SearchPipeline:
         dlon = lon2 - lon1
         a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
         c = 2 * asin(sqrt(a))
-        r = 6371  # Earth's radius in kilometers
+        r = 6371
         
         return c * r
     
@@ -541,60 +437,48 @@ class SearchPipeline:
         """Get players that need embedding generation/updates"""
         try:
             with self.search_engine.conn.cursor() as cur:
-                # Get players without embeddings or with old embeddings
-                if self.search_engine.pgvector_available:
-                    query = """
-                        SELECT 
-                            p.id, p.first_name, p.last_name, p.location, p.birth_date,
-                            p.height, p.weight, p.gender, p.status,
-                            EXTRACT(YEAR FROM AGE(p.birth_date)) as age,
-                            (SELECT AVG(ps.level) FROM player_skills ps WHERE ps.player_id = p.id) as avg_skill_level,
-                            (SELECT array_agg(pt.position) FROM player_teams pt WHERE pt.player_id = p.id) as positions,
-                            (SELECT json_object_agg(ps.skill, ps.level) FROM player_skills ps WHERE ps.player_id = p.id) as skills
-                        FROM players p
-                        LEFT JOIN player_embeddings pe ON pe.player_id = p.id
-                        WHERE p.status = 'active' AND p.deleted_at IS NULL
-                        AND (pe.player_id IS NULL OR pe.updated_at < p.updated_at)
-                        ORDER BY p.created_at DESC
-                        LIMIT %s
-                    """
-                else:
-                    query = """
-                        SELECT 
-                            p.id, p.first_name, p.last_name, p.location, p.birth_date,
-                            p.height, p.weight, p.gender, p.status,
-                            EXTRACT(YEAR FROM AGE(p.birth_date)) as age,
-                            (SELECT AVG(ps.level) FROM player_skills ps WHERE ps.player_id = p.id) as avg_skill_level,
-                            (SELECT array_agg(pt.position) FROM player_teams pt WHERE pt.player_id = p.id) as positions,
-                            (SELECT json_object_agg(ps.skill, ps.level) FROM player_skills ps WHERE ps.player_id = p.id) as skills
-                        FROM players p
-                        LEFT JOIN player_embeddings_fallback pef ON pef.player_id = p.id
-                        WHERE p.status = 'active' AND p.deleted_at IS NULL
-                        AND (pef.player_id IS NULL OR pef.updated_at < p.updated_at)
-                        ORDER BY p.created_at DESC
-                        LIMIT %s
-                    """
+                query = """
+                    SELECT 
+                        p.id, p.first_name, p.last_name, p.location, p.birth_date,
+                        p.height, p.weight, p.gender, p.status,
+                        EXTRACT(YEAR FROM AGE(p.birth_date)) as age,
+                        (SELECT AVG(ps.level) FROM player_skills ps WHERE ps.player_id = p.id) as avg_skill_level,
+                        (SELECT array_agg(pt.position) FROM player_teams pt WHERE pt.player_id = p.id AND pt.end_at IS NULL) as positions,
+                        (SELECT json_object_agg(ps.skill, ps.level) FROM player_skills ps WHERE ps.player_id = p.id) as skills
+                    FROM players p
+                    WHERE p.status = 'active' 
+                    AND p.deleted_at IS NULL
+                    AND p.embedding IS NULL
+                    ORDER BY p.created_at DESC
+                    LIMIT %s
+                """
                 
                 cur.execute(query, (limit,))
                 results = cur.fetchall()
                 
-                # Convert to list of dicts
                 players = []
                 for row in results:
+                    location_json = row[3]
+                    if isinstance(location_json, str):
+                        try:
+                            location_json = json.loads(location_json)
+                        except:
+                            location_json = {}
+                    
                     player = {
                         'id': row[0],
                         'first_name': row[1],
                         'last_name': row[2],
-                        'location': json.loads(row[3]) if row[3] else {},
+                        'location': location_json,
                         'birth_date': row[4],
                         'height': row[5],
                         'weight': row[6],
                         'gender': row[7],
                         'status': row[8],
-                        'age': row[9],
-                        'avg_skill_level': row[10] or 50,
+                        'age': int(row[9]) if row[9] is not None else None,
+                        'avg_skill_level': float(row[10]) if row[10] is not None else 50.0,
                         'positions': row[11] or [],
-                        'skills': json.loads(row[12]) if row[12] else {}
+                        'skills': row[12] if row[12] else {}
                     }
                     players.append(player)
                 
@@ -602,10 +486,12 @@ class SearchPipeline:
                 
         except Exception as e:
             logger.error(f"Failed to get players needing embeddings: {e}")
+            import traceback
+            traceback.print_exc()
             return []
     
-    def _log_event(self, user_id: int, player_id: str, event_type: str, query_context: Dict):
-        """Log engagement event for model training"""
+    def log_interaction(self, user_id, player_id, event_type, query_context):
+        """Log user interactions"""
         try:
             with self.search_engine.conn.cursor() as cur:
                 cur.execute("""
@@ -617,7 +503,3 @@ class SearchPipeline:
                 logger.info(f"Logged {event_type} event for user {user_id}, player {player_id}")
         except Exception as e:
             logger.error(f"Failed to log event: {e}")
-
-    def log_interaction(self, user_id: int, player_id: str, event_type: str, query_context: Dict):
-        """Public method to log user interactions"""
-        self._log_event(user_id, player_id, event_type, query_context)
