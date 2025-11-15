@@ -1,6 +1,8 @@
 .env
 .env.example
 
+app.log
+
 /.idea
 /.venv
 /pgvector
