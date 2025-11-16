@@ -45,7 +45,7 @@ class SearchPipeline:
         self.saved_search_mgr = SavedSearchManager(self.search_engine)
 
         self.max_candidates = 1000
-        self.default_limit = 20
+        self.default_limit = 10
         
         logger.info("SearchPipeline initialized")
 
@@ -100,12 +100,13 @@ class SearchPipeline:
         
         try:
             # Stage 1: Filter-based candidate retrieval
-            logger.info("Stage 1: Filter-based candidate retrieval")
+            logger.info(f"Starting search with filters: {filters}")
             filter_start = time.time()
             
             candidate_ids = self.search_engine.strict_filter_stage(filters)
             
             if not candidate_ids:
+                logger.info("No candidates found from filter stage.")
                 return {
                     'results': [],
                     'total_count': 0,
@@ -133,7 +134,10 @@ class SearchPipeline:
             ml_reranked = False
             
             # Stage 2: Vector similarity (if beneficial)
-            if len(candidates) > limit and self._should_use_vector_search(filters):
+            use_vector_search = self._should_use_vector_search(filters)
+            logger.info(f"Should use vector search: {use_vector_search}")
+
+            if use_vector_search:
                 logger.info("Stage 2: Vector similarity reranking")
                 vector_start = time.time()
                 
@@ -148,9 +152,13 @@ class SearchPipeline:
                 )
                 
                 if vector_results:
+                    logger.info(f"Vector search returned {len(vector_results)} results.")
                     # Merge filter and vector results
                     candidates = self._merge_filter_and_vector_results(candidates, vector_results)
                     reranked = True
+                    logger.info(f"Candidates after vector merging: {len(candidates)}")
+                else:
+                    logger.info("Vector search returned no results.")
                 
                 vector_time = time.time() - vector_start
                 logger.info(f"Vector reranking completed in {vector_time:.3f}s")
@@ -170,6 +178,7 @@ class SearchPipeline:
                 
                 candidates = self.ml_reranker.rerank(candidates, query_context)
                 ml_reranked = True
+                logger.info(f"Candidates after ML re-ranking: {len(candidates)}")
                 
                 rerank_time = time.time() - rerank_start
                 logger.info(f"ML re-ranking completed in {rerank_time:.3f}s")
@@ -349,18 +358,35 @@ class SearchPipeline:
         return any(filters.get(f) for f in vector_beneficial_filters)
     
     def _merge_filter_and_vector_results(self, filter_results: List[Dict], vector_results: List[Dict]) -> List[Dict]:
-        """Merge filter-based and vector similarity results"""
-        # Create lookup for vector scores
-        vector_scores = {r['id']: r.get('similarity_score', 0) for r in vector_results}
+        """
+        Merge filter-based and vector similarity results, prioritizing players who appear in both.
+        """
+        filter_map = {player['id']: player for player in filter_results}
+        vector_map = {player['id']: player for player in vector_results}
+
+        merged_results = []
         
-        # Add similarity scores to filter results
-        for result in filter_results:
-            result['similarity_score'] = vector_scores.get(result['id'], 0.0)
-        
+        # Add players from vector results, enriched with filter data if available
+        for player_id, vector_player in vector_map.items():
+            if player_id in filter_map:
+                # Player is in both, use filter data and add vector score
+                merged_player = filter_map[player_id]
+                merged_player['similarity_score'] = vector_player.get('similarity_score', 0.0)
+                merged_results.append(merged_player)
+            else:
+                # Player only in vector results, add them
+                merged_results.append(vector_player)
+
+        # Add players who were only in filter results (and not in vector results)
+        for player_id, filter_player in filter_map.items():
+            if player_id not in vector_map:
+                filter_player['similarity_score'] = 0.0 # Or some default
+                merged_results.append(filter_player)
+
         # Sort by similarity score
-        filter_results.sort(key=lambda x: x.get('similarity_score', 0.0), reverse=True)
+        merged_results.sort(key=lambda x: x.get('similarity_score', 0.0), reverse=True)
         
-        return filter_results
+        return merged_results
     
     def _calculate_match_score(self, player: Dict, filters: Dict) -> float:
         """Calculate match score for the player"""

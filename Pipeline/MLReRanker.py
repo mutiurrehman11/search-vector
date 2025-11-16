@@ -191,16 +191,16 @@ class MLReRanker:
                         'id': row[1],
                         'first_name': row[4],
                         'last_name': row[5],
-                        'location': json.loads(row[6]) if row[6] else {},
+                        'location': json.loads(row[6]) if isinstance(row[6], str) else (row[6] or {}),
                         'age': row[8],
-                        'skills': json.loads(row[9]) if row[9] else {},
+                        'skills': json.loads(row[9]) if isinstance(row[9], str) else (row[9] or {}),
                         'positions': row[10] or [],
                         'tags': row[11] or [],
                         'similarity_score': 0.5  # Default if no embedding
                     }
                     
                     # Query context
-                    query_context = json.loads(row[3]) if row[3] else {}
+                    query_context = json.loads(row[3]) if isinstance(row[3], str) else (row[3] or {})
                     
                     # Extract features
                     features = self.extract_features(player, query_context)
@@ -306,9 +306,11 @@ class MLReRanker:
     def rerank(self, players: List[Dict], query_context: Dict) -> List[Dict]:
         """Re-rank players using trained model"""
         if not self.model or not players or not hasattr(self.scaler, 'mean_'):
+            logger.warning("ML re-ranker not trained or invalid data")
             return players
-        
+
         if len(players) == 0:
+            logger.warning("No players to re-rank")
             return players
         
         try:

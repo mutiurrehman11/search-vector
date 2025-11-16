@@ -47,12 +47,12 @@ log_formatter = logging.Formatter(
     '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
 )
 
-sys.stdout.reconfigure(line_buffering=True)
-
 # File handler
 file_handler = logging.FileHandler('app.log')
 file_handler.setFormatter(log_formatter)
 file_handler.setLevel(logging.INFO)
+
+sys.stdout.reconfigure(line_buffering=True)
 
 # Console handler (this shows logs in terminal)
 console_handler = logging.StreamHandler()
@@ -62,10 +62,11 @@ console_handler.setLevel(logging.INFO)
 # Get Flask’s root logger
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-logger.addHandler(file_handler)
 logger.addHandler(console_handler)
+logger.addHandler(file_handler)
 
 logging.getLogger('werkzeug').addHandler(console_handler)
+logging.getLogger('werkzeug').addHandler(file_handler)
 
 
 
@@ -537,6 +538,27 @@ def train_model():
         logger.error(f"Model training error: {str(e)}", exc_info=True)
         return jsonify({
             'error': 'Model training failed',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/v1/admin/generate-embeddings', methods=['POST'])
+def generate_embeddings():
+    """
+    Generate and store embeddings for players missing them (Admin endpoint)
+
+    POST /api/v1/admin/generate-embeddings
+    """
+    try:
+        logger.info("Starting embedding generation via API")
+        result = pipeline.generate_and_store_embeddings()
+        
+        return jsonify(result), 200
+            
+    except Exception as e:
+        logger.error(f"Embedding generation error: {str(e)}", exc_info=True)
+        return jsonify({
+            'error': 'Embedding generation failed',
             'message': str(e)
         }), 500
 

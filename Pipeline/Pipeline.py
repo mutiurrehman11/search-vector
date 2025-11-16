@@ -292,6 +292,7 @@ class PlayerSearchEngine:
                 top_k
             ))
             results = cur.fetchall()
+            print(f"Results fetched for similarity: {results}")
 
         return [dict(r) for r in results]
 
@@ -304,6 +305,7 @@ class PlayerSearchEngine:
                     SET embedding = %s, updated_at = NOW()
                     WHERE id = %s
                 """, (embedding.tolist(), player_id))
+                print(f"Player ID: {player_id} embeddings stored")
                 self.conn.commit()
         except Exception as e:
             self.conn.rollback()
