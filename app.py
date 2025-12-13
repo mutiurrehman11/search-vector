@@ -4,9 +4,8 @@ from marshmallow import Schema, fields, validate, ValidationError
 import json
 import logging
 from functools import wraps
-from datetime import datetime, timedelta
+from datetime import datetime
 import hashlib
-from typing import Dict, List, Optional
 import os
 import sys
 import pytz
@@ -31,6 +30,7 @@ class Config:
 
     # Model settings
     MODEL_PATH = os.getenv('MODEL_PATH', 'reranker_model.pkl')
+    POST_MODEL_PATH = os.getenv('POST_MODEL_PATH', 'models/post_recommender.pkl')
     RERANKING_ENABLED = os.getenv('RERANKING_ENABLED', 'true').lower() == 'true'
 
     # API settings
@@ -54,12 +54,12 @@ file_handler.setLevel(logging.INFO)
 
 sys.stdout.reconfigure(line_buffering=True)
 
-# Console handler (this shows logs in terminal)
+# Console handler
 console_handler = logging.StreamHandler()
 console_handler.setFormatter(log_formatter)
 console_handler.setLevel(logging.INFO)
 
-# Get Flask’s root logger
+# Get Flask's root logger
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 logger.addHandler(console_handler)
@@ -68,8 +68,6 @@ logger.addHandler(file_handler)
 logging.getLogger('werkzeug').addHandler(console_handler)
 logging.getLogger('werkzeug').addHandler(file_handler)
 
-
-
 pipeline = SearchPipeline(Config.DB_CONFIG)
 
 logger.info("Search pipeline initialized")
@@ -77,9 +75,7 @@ logger.info("Search pipeline initialized")
 
 class SearchRequestSchema(Schema):
     """Schema for search requests"""
-    user_id = fields.Int(required=False)  # Optional - only needed for personalization and logging
-
-    # Filters
+    user_id = fields.Int(required=False)
     role = fields.Str()
     position = fields.Str(validate=validate.OneOf(['forward', 'midfielder', 'defender', 'goalkeeper', 'any']))
     min_skill = fields.Int(validate=validate.Range(min=1, max=100))
@@ -91,14 +87,8 @@ class SearchRequestSchema(Schema):
     max_distance_km = fields.Float(validate=validate.Range(min=0, max=1000))
     availability = fields.List(fields.Str())
     tags = fields.List(fields.Str())
-
-    # Seed players for "find similar"
-    seed_player_ids = fields.List(fields.Str())  # Changed from Int to Str for CHAR(26) IDs
-
-    # Tag boosts
+    seed_player_ids = fields.List(fields.Str())
     tag_boosts = fields.Dict(keys=fields.Str(), values=fields.Float())
-
-    # Pagination
     limit = fields.Int(validate=validate.Range(min=1, max=Config.MAX_RESULTS), load_default=Config.DEFAULT_RESULTS)
     offset = fields.Int(validate=validate.Range(min=0), load_default=0)
 
@@ -106,7 +96,7 @@ class SearchRequestSchema(Schema):
 class EventLogSchema(Schema):
     """Schema for logging engagement events"""
     user_id = fields.Str(required=True)
-    player_id = fields.Str(required=True)  # Changed from Int to Str for CHAR(26) IDs
+    player_id = fields.Str(required=True)
     event_type = fields.Str(
         required=True,
         validate=validate.OneOf(['impression', 'profile_view', 'follow', 'message', 'save_to_playlist'])
@@ -114,15 +104,27 @@ class EventLogSchema(Schema):
     query_context = fields.Dict(load_default=dict)
 
 
+class PostInteractionSchema(Schema):
+    """Schema for post interaction events"""
+    user_id = fields.Str(required=True)
+    post_id = fields.Str(required=True)
+    interaction_type = fields.Str(
+        required=True,
+        validate=validate.OneOf(['view', 'like', 'comment', 'share', 'save'])
+    )
+    interaction_metadata = fields.Dict(load_default=dict)
+    dwell_time_seconds = fields.Float(load_default=0.0)
+
+
 class RecommendationRequestSchema(Schema):
     """Schema for recommendation requests"""
-    player_id = fields.Str(required=True)  # Changed from Int to Str for CHAR(26) IDs
+    player_id = fields.Str(required=True)
     limit = fields.Int(validate=validate.Range(min=1, max=50), load_default=10)
-
 
 
 def validate_request(schema_class):
     """Request validation decorator"""
+
     def decorator(f):
         @wraps(f)
         def wrapped(*args, **kwargs):
@@ -136,9 +138,10 @@ def validate_request(schema_class):
                     'error': 'Validation failed',
                     'details': err.messages
                 }), 400
-        return wrapped
-    return decorator
 
+        return wrapped
+
+    return decorator
 
 
 @app.route('/health', methods=['GET'])
@@ -158,29 +161,11 @@ def health_check():
 @app.route('/api/v1/search', methods=['POST'])
 @validate_request(SearchRequestSchema)
 def search_players():
-    """
-    Search for players based on filters and preferences
-    
-    POST /api/v1/search
-    {
-        "user_id": 123,
-        "position": "midfielder",
-        "min_skill": 60,
-        "max_skill": 90,
-        "latitude": 40.7128,
-        "longitude": -74.0060,
-        "max_distance_km": 10,
-        "availability": ["weekday_evening"],
-        "tags": ["competitive"],
-        "limit": 20,
-        "offset": 0
-    }
-    """
+    """Search for players based on filters and preferences"""
     try:
         data = request.validated_data
         logger.info(f"Search request received: {data}")
 
-        # Extract filters for the search
         filters = {
             k: v for k, v in data.items()
             if k not in ['user_id', 'limit', 'offset']
@@ -191,7 +176,6 @@ def search_players():
         if 'max_age' in filters:
             filters['max_age'] = int(filters['max_age'])
 
-        # Execute search using the new pipeline
         search_results = pipeline.search_players(
             filters=filters,
             limit=data.get('limit', Config.DEFAULT_RESULTS),
@@ -199,7 +183,6 @@ def search_players():
         )
         logger.info(f"Search results from pipeline: {search_results}")
 
-        # Format response
         formatted_results = []
         for player in search_results.get('results', []):
             formatted_player = {
@@ -218,10 +201,8 @@ def search_players():
             }
             formatted_results.append(formatted_player)
 
-        # Log search event (only if user_id provided)
         if data.get('user_id'):
             try:
-                # This would be implemented with proper event logging
                 logger.info(f"Search performed by user {data['user_id']}: {len(formatted_results)} results")
             except Exception as e:
                 logger.warning(f"Failed to log search event: {e}")
@@ -250,24 +231,11 @@ def search_players():
 @app.route('/api/v1/events', methods=['POST'])
 @validate_request(EventLogSchema)
 def log_event():
-    """
-    Log user engagement events (for model training)
-
-    POST /api/v1/events
-    {
-        "user_id": 123,
-        "player_id": 456,
-        "event_type": "open",
-        "query_context": {...},
-        "result_position": 3,
-        "session_id": "abc123"
-    }
-    """
+    """Log user engagement events (for model training)"""
     try:
         data = request.validated_data
 
         print(f"Logging event: {data}")
-        # Log event asynchronously (use Celery in production)
         pipeline.log_interaction(
             user_id=data['user_id'],
             player_id=data['player_id'],
@@ -288,30 +256,264 @@ def log_event():
         }), 500
 
 
+# ===== NEW POST INTERACTION ROUTES =====
+
+@app.route('/api/v1/posts/interactions', methods=['POST'])
+@validate_request(PostInteractionSchema)
+def log_post_interaction():
+    """
+    Log user interactions with posts (likes, comments, shares, etc.)
+
+    POST /api/v1/posts/interactions
+    {
+        "user_id": "01HXA7B2C3D4E5F6G7H8J9K0M1",
+        "post_id": "01HXA7B2C3D4E5F6G7H8J9K0M2",
+        "interaction_type": "like",
+        "interaction_metadata": {"source": "feed"},
+        "dwell_time_seconds": 5.2
+    }
+    """
+    try:
+        data = request.validated_data
+        logger.info(f"Post interaction logged: {data}")
+
+        # Log the interaction to database
+        with pipeline.search_engine.conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO post_interactions 
+                (user_id, post_id, interaction_type, interaction_metadata, dwell_time_seconds, created_at)
+                VALUES (%s, %s, %s, %s, %s, NOW())
+                RETURNING id;
+            """, (
+                data['user_id'],
+                data['post_id'],
+                data['interaction_type'],
+                json.dumps(data.get('interaction_metadata', {})),
+                data.get('dwell_time_seconds', 0.0)
+            ))
+
+            interaction_id = cur.fetchone()[0]
+            pipeline.search_engine.conn.commit()
+
+        return jsonify({
+            'status': 'logged',
+            'interaction_id': interaction_id,
+            'interaction_type': data['interaction_type'],
+            'timestamp': datetime.now(pytz.UTC).isoformat()
+        }), 201
+
+    except Exception as e:
+        logger.error(f"Post interaction logging error: {str(e)}", exc_info=True)
+        pipeline.search_engine.conn.rollback()
+        return jsonify({
+            'error': 'Failed to log post interaction',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/v1/posts/feed/<string:user_id>', methods=['GET'])
+def get_personalized_feed(user_id: str):
+    """
+    Get personalized post feed for a user based on their interactions
+
+    GET /api/v1/posts/feed/01HXA7B2C3D4E5F6G7H8J9K0M1?limit=20&offset=0
+    """
+    try:
+        # Validate user_id format (ULID is 26 characters)
+        if not user_id or len(user_id) != 26:
+            return jsonify({
+                'posts': [],
+                'error': 'Invalid user ID format',
+                'message': 'User ID must be a 26-character ULID'
+            }), 400
+
+        # Get pagination parameters
+        try:
+            limit = min(int(request.args.get('limit', 20)), 100)
+            offset = int(request.args.get('offset', 0))
+        except ValueError:
+            return jsonify({
+                'posts': [],
+                'error': 'Invalid pagination parameters',
+                'message': 'Limit and offset must be integers'
+            }), 400
+
+        logger.info(f"Fetching personalized feed for user {user_id} (limit={limit}, offset={offset})")
+
+        # Get personalized post recommendations
+        from Pipeline.PostRecommender import PostRecommendationEngine
+        post_recommend = PostRecommendationEngine(pipeline.search_engine.conn, Config.POST_MODEL_PATH)
+
+        recommended_posts = post_recommend.get_personalized_feed(
+            user_id=user_id,
+            limit=limit,
+            offset=offset
+        )
+
+        return jsonify({
+            'posts': recommended_posts.get('posts', []),
+            'total': recommended_posts.get('total_count', 0),
+            'user_id': user_id,
+            'metadata': {
+                'personalized': recommended_posts.get('personalized', False),
+                'recommendation_strategy': recommended_posts.get('strategy', 'fallback'),
+                'cached': False
+            },
+            'pagination': {
+                'limit': limit,
+                'offset': offset,
+                'has_more': len(recommended_posts.get('posts', [])) == limit
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"Failed to get personalized feed: {str(e)}", exc_info=True)
+        return jsonify({
+            'posts': [],
+            'error': 'Failed to retrieve personalized feed',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/v1/posts/trending', methods=['GET'])
+def get_trending_posts():
+    """
+    Get trending posts based on recent engagement
+
+    GET /api/v1/posts/trending?limit=20&timeframe=24h
+    """
+    try:
+        limit = min(int(request.args.get('limit', 20)), 100)
+        timeframe = request.args.get('timeframe', '24h')
+
+        # Parse timeframe
+        hours_map = {'1h': 1, '6h': 6, '12h': 12, '24h': 24, '48h': 48, '7d': 168}
+        hours = hours_map.get(timeframe, 24)
+
+        logger.info(f"Fetching trending posts (limit={limit}, timeframe={timeframe})")
+
+        with pipeline.search_engine.conn.cursor() as cur:
+            cur.execute("""
+                SELECT 
+                    p.id,
+                    p.player_id,
+                    p.content,
+                    p.media_urls,
+                    p.created_at,
+                    CONCAT(pl.first_name, ' ', pl.last_name) as author_name,
+                    pl.profile_picture as author_avatar,
+                    COUNT(DISTINCT CASE WHEN pi.interaction_type = 'like' THEN pi.id END) as like_count,
+                    COUNT(DISTINCT CASE WHEN pi.interaction_type = 'comment' THEN pi.id END) as comment_count,
+                    COUNT(DISTINCT CASE WHEN pi.interaction_type = 'share' THEN pi.id END) as share_count,
+                    COUNT(DISTINCT pi.user_id) as unique_engagement_count,
+                    -- Engagement score: weighted sum with recency boost
+                    (
+                        COUNT(DISTINCT CASE WHEN pi.interaction_type = 'like' THEN pi.id END) * 1 +
+                        COUNT(DISTINCT CASE WHEN pi.interaction_type = 'comment' THEN pi.id END) * 3 +
+                        COUNT(DISTINCT CASE WHEN pi.interaction_type = 'share' THEN pi.id END) * 5
+                    ) * EXP(-EXTRACT(EPOCH FROM (NOW() - p.created_at)) / 86400.0) as engagement_score
+                FROM posts p
+                LEFT JOIN players pl ON p.player_id = pl.id
+                LEFT JOIN post_interactions pi ON p.id = pi.post_id 
+                    AND pi.created_at > NOW() - INTERVAL '%s hours'
+                WHERE p.created_at > NOW() - INTERVAL '%s hours'
+                    AND p.deleted_at IS NULL
+                GROUP BY p.id, pl.first_name, pl.last_name, pl.profile_picture
+                ORDER BY engagement_score DESC
+                LIMIT %s;
+            """, (hours, hours, limit))
+
+            trending_posts = cur.fetchall()
+
+        formatted_posts = []
+        for post in trending_posts:
+            formatted_posts.append({
+                'id': post[0],
+                'player_id': post[1],
+                'content': post[2],
+                'media_urls': post[3] if post[3] else [],
+                'created_at': post[4].isoformat(),
+                'author': {
+                    'name': post[5],
+                    'avatar': post[6]
+                },
+                'engagement': {
+                    'likes': post[7],
+                    'comments': post[8],
+                    'shares': post[9],
+                    'unique_users': post[10]
+                },
+                'engagement_score': float(post[11])
+            })
+
+        return jsonify({
+            'posts': formatted_posts,
+            'total': len(formatted_posts),
+            'metadata': {
+                'timeframe': timeframe,
+                'hours': hours,
+                'type': 'trending'
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"Failed to get trending posts: {str(e)}", exc_info=True)
+        return jsonify({
+            'posts': [],
+            'error': 'Failed to retrieve trending posts',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/v1/admin/train-post-model', methods=['POST'])
+def train_post_recommendation_model():
+    """
+    Train the post recommendation model based on user interactions
+
+    POST /api/v1/admin/train-post-model
+    """
+    try:
+        logger.info("Starting post recommendation model training via API")
+
+        from Pipeline.PostRecommender import PostRecommendationEngine
+        post_recommender = PostRecommendationEngine(pipeline.search_engine.conn, Config.POST_MODEL_PATH)
+
+        result = post_recommender.train_model()
+
+        if result['success']:
+            return jsonify({
+                'message': result['message'],
+                'metadata': result['metadata']
+            }), 200
+        else:
+            return jsonify({
+                'error': result.get('error', 'Training failed'),
+                'metadata': result.get('metadata', {})
+            }), 400
+
+    except Exception as e:
+        logger.error(f"Post model training error: {str(e)}", exc_info=True)
+        return jsonify({
+            'error': 'Post model training failed',
+            'message': str(e)
+        }), 500
+
+
+# ===== EXISTING ROUTES (kept as-is) =====
+
 @app.route('/api/v1/recommendations/<string:player_id>', methods=['GET'])
 def get_recommendations(player_id: str):
-    """
-    Get "more like this" recommendations
-
-    GET /api/v1/recommendations/456?limit=10
-    """
+    """Get "more like this" recommendations"""
     try:
         limit = min(int(request.args.get('limit', 10)), 50)
 
-        # Use the similarity search with the player as seed
-        filters = {
-            'seed_player_ids': [player_id]
-        }
-
-        # Validate player_id format (ULID is 26 characters)
         if not player_id or len(player_id) != 26:
             return jsonify({
                 'recommendations': [],
                 'error': 'Invalid player ID format',
                 'message': 'Player ID must be a 26-character ULID'
             }), 400
-        
-        # Validate limit parameter
+
         try:
             limit = min(int(request.args.get('limit', 10)), 50)
         except ValueError:
@@ -320,8 +522,7 @@ def get_recommendations(player_id: str):
                 'error': 'Invalid limit parameter',
                 'message': 'Limit must be an integer'
             }), 400
-        
-        # Check if player exists
+
         with pipeline.search_engine.conn.cursor() as cur:
             cur.execute("""
                 SELECT id FROM players 
@@ -329,7 +530,7 @@ def get_recommendations(player_id: str):
                 AND status = 'active' 
                 AND deleted_at IS NULL
             """, (player_id,))
-            
+
             if not cur.fetchone():
                 return jsonify({
                     'recommendations': [],
@@ -337,7 +538,8 @@ def get_recommendations(player_id: str):
                     'message': f'No active player found with ID: {player_id}',
                     'player_id': player_id
                 }), 404
-        
+
+        filters = {'seed_player_ids': [player_id]}
         recommendations = pipeline.search_players(
             filters=filters,
             limit=limit,
@@ -373,15 +575,11 @@ def get_recommendations(player_id: str):
 
 @app.route('/api/v1/admin/train-model', methods=['POST'])
 def train_ml_model():
-    """
-    Train the ML re-ranking model (Admin endpoint)
-    
-    POST /api/v1/admin/train-model
-    """
+    """Train the ML re-ranking model (Admin endpoint)"""
     try:
         logger.info("Starting ML model training via API")
         result = pipeline.train_ml_model()
-        
+
         if result['success']:
             return jsonify({
                 'message': result['message'],
@@ -392,7 +590,7 @@ def train_ml_model():
                 'error': result['error'],
                 'metadata': result['metadata']
             }), 400
-            
+
     except Exception as e:
         logger.error(f"ML training error: {str(e)}", exc_info=True)
         return jsonify({
@@ -400,19 +598,10 @@ def train_ml_model():
             'message': str(e)
         }), 500
 
+
 @app.route('/api/v1/saved-searches', methods=['POST'])
 def save_search():
-    """
-    Save a search for future alerts
-
-    POST /api/v1/saved-searches
-    {
-        "user_id": "abc-123",
-        "search_name": "Competitive midfielders near me",
-        "filters": {...},
-        "alert_frequency": "weekly"
-    }
-    """
+    """Save a search for future alerts"""
     try:
         data = request.json
         if data["alert_frequency"] not in ["daily", "weekly"]:
@@ -442,25 +631,9 @@ def save_search():
         }), 500
 
 
-@app.route('/api/v1/saved-searches/<int:saved_search_id>/new-matches', methods=['GET'])
-def get_new_matches_for_saved_search(saved_search_id):
-    """Get new matches for a saved search since the last alert."""
-    try:
-        new_matches = pipeline.saved_search_mgr.get_new_matches(saved_search_id)
-        return jsonify(new_matches)
-
-    except Exception as e:
-        app.logger.error(f"Failed to get new matches: {e}")
-        return jsonify({"error": "Failed to get new matches", "message": str(e)}), 500
-
-
 @app.route('/api/v1/saved-searches/<user_id>', methods=['GET'])
 def get_saved_searches(user_id):
-    """
-    Get all saved searches for a user
-
-    GET /api/v1/saved-searches/123
-    """
+    """Get all saved searches for a user"""
     try:
         logger.info(f"Fetching saved searches for user_id: {user_id}")
         saved_searches = pipeline.saved_search_mgr.get_saved_searches(str(user_id))
@@ -478,83 +651,15 @@ def get_saved_searches(user_id):
         }), 500
 
 
-@app.route('/api/v1/saved-searches/<int:search_id>/matches', methods=['GET'])
-def get_new_matches(search_id: int):
-    """
-    Get new matches for a saved search
-
-    GET /api/v1/saved-searches/456/matches
-    """
-    try:
-        new_matches = pipeline.saved_search_mgr.get_new_matches(search_id)
-
-        formatted_results = []
-        for player in new_matches:
-            formatted_results.append({
-                'id': player['id'],
-                'name': player['name'],
-                'position': player['position'],
-                'skill_level': player['skill_level'],
-                'similarity': player.get('similarity', 0),
-                'created_at': player['created_at'].isoformat()
-            })
-
-        return jsonify({
-            'new_matches': formatted_results,
-            'total': len(formatted_results),
-            'search_id': search_id
-        })
-
-    except Exception as e:
-        logger.error(f"Get new matches error: {str(e)}", exc_info=True)
-        return jsonify({
-            'error': 'Failed to retrieve new matches',
-            'message': str(e)
-        }), 500
-
-
-@app.route('/api/v1/admin/train-model', methods=['POST'])
-def train_model():
-    """
-    Train the ML re-ranking model (admin endpoint)
-    Requires authentication in production
-
-    POST /api/v1/admin/train-model
-    """
-    try:
-        # TODO: Add authentication
-
-        logger.info("Starting model training...")
-        pipeline.train_ml_model()
-        pipeline.ml_reranker.save_model(Config.MODEL_PATH)
-
-        return jsonify({
-            'status': 'success',
-            'message': 'Model trained and saved',
-            'model_path': Config.MODEL_PATH
-        })
-
-    except Exception as e:
-        logger.error(f"Model training error: {str(e)}", exc_info=True)
-        return jsonify({
-            'error': 'Model training failed',
-            'message': str(e)
-        }), 500
-
-
 @app.route('/api/v1/admin/generate-embeddings', methods=['POST'])
 def generate_embeddings():
-    """
-    Generate and store embeddings for players missing them (Admin endpoint)
-
-    POST /api/v1/admin/generate-embeddings
-    """
+    """Generate and store embeddings for players missing them (Admin endpoint)"""
     try:
         logger.info("Starting embedding generation via API")
         result = pipeline.generate_and_store_embeddings()
-        
+
         return jsonify(result), 200
-            
+
     except Exception as e:
         logger.error(f"Embedding generation error: {str(e)}", exc_info=True)
         return jsonify({
@@ -581,10 +686,6 @@ def internal_error(error):
 
 
 if __name__ == "__main__":
-    # For production, use a production-ready WSGI server like Gunicorn or uWSGI
-    # Example with Gunicorn: gunicorn --workers 4 --bind 0.0.0.0:5000 app:app
-    # app.run(debug=False, host='0.0.0.0', threaded=False)
-
     import sys
 
     if len(sys.argv) > 1:
@@ -601,13 +702,21 @@ if __name__ == "__main__":
             pipeline.ml_reranker.save_model(Config.MODEL_PATH)
             print(f"Model trained and saved to {Config.MODEL_PATH}")
 
+        elif command == 'train-post-model':
+            print("Training post recommendation model...")
+            from Pipeline.PostRecommender import PostRecommendationEngine
+
+            post_recommender = PostRecommendationEngine(pipeline.search_engine.conn, Config.POST_MODEL_PATH)
+            result = post_recommender.train_model()
+            print(f"Post model training result: {result}")
+
         elif command == 'index-players':
             print("Indexing players...")
             print("Indexing complete!")
 
         else:
             print(f"Unknown command: {command}")
-            print("Available commands: setup-db, train-model, index-players")
+            print("Available commands: setup-db, train-model, train-post-model, index-players")
 
     else:
-        app.run(debug=True, host='0.0.0.0', port=5000)
+        app.run(debug=True, host='0.0.0.0', port=5000, reload=True)

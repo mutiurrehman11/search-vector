@@ -259,6 +259,180 @@ CREATE TABLE saved_searches (
     updated_at TIMESTAMPTZ DEFAULT now()
 );
 
+
+-- Posts table - User-generated content
+CREATE TABLE posts (
+    id CHAR(26) PRIMARY KEY,
+    player_id CHAR(26) NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    media_urls JSONB,  -- Array of image/video URLs
+    hashtags TEXT[],   -- Array of hashtags
+    visibility VARCHAR(50) DEFAULT 'public' CHECK (visibility IN ('public', 'followers', 'private')),
+    post_type VARCHAR(50) DEFAULT 'standard' CHECK (post_type IN ('standard', 'highlight', 'achievement', 'training')),
+    location JSONB,    -- Optional location data
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    deleted_at TIMESTAMPTZ,
+    tenant_id VARCHAR(255) REFERENCES tenants(id)
+);
+
+-- Post interactions table - Track all user engagement with posts
+CREATE TABLE post_interactions (
+    id BIGSERIAL PRIMARY KEY,
+    user_id CHAR(26) NOT NULL,  -- User who performed the interaction
+    post_id CHAR(26) NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    interaction_type VARCHAR(50) NOT NULL CHECK (
+        interaction_type IN ('view', 'like', 'comment', 'share', 'save')
+    ),
+    interaction_metadata JSONB,  -- Additional context (e.g., source: 'feed', 'profile', 'search')
+    dwell_time_seconds REAL DEFAULT 0,  -- How long user viewed the post
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Comments table - Detailed comment data
+CREATE TABLE post_comments (
+    id CHAR(26) PRIMARY KEY,
+    post_id CHAR(26) NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    player_id CHAR(26) NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+    parent_comment_id CHAR(26) REFERENCES post_comments(id) ON DELETE CASCADE,  -- For threaded comments
+    content TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    deleted_at TIMESTAMPTZ
+);
+
+-- Post engagement aggregates - Cached counts for performance
+CREATE TABLE post_engagement_stats (
+    post_id CHAR(26) PRIMARY KEY REFERENCES posts(id) ON DELETE CASCADE,
+    view_count INT DEFAULT 0,
+    like_count INT DEFAULT 0,
+    comment_count INT DEFAULT 0,
+    share_count INT DEFAULT 0,
+    save_count INT DEFAULT 0,
+    unique_viewers INT DEFAULT 0,
+    avg_dwell_time_seconds REAL DEFAULT 0,
+    engagement_rate REAL DEFAULT 0,  -- (likes + comments + shares) / views
+    viral_score REAL DEFAULT 0,      -- Weighted engagement with recency boost
+    last_updated TIMESTAMPTZ DEFAULT now()
+);
+
+-- Indexes for posts
+CREATE INDEX idx_posts_player_id ON posts(player_id);
+CREATE INDEX idx_posts_created_at ON posts(created_at DESC);
+CREATE INDEX idx_posts_visibility ON posts(visibility);
+CREATE INDEX idx_posts_post_type ON posts(post_type);
+CREATE INDEX idx_posts_deleted_at ON posts(deleted_at);
+CREATE INDEX idx_posts_tenant_id ON posts(tenant_id);
+CREATE INDEX idx_posts_hashtags ON posts USING gin(hashtags);  -- GIN index for array search
+
+-- Indexes for post_interactions
+CREATE INDEX idx_post_interactions_user_id ON post_interactions(user_id);
+CREATE INDEX idx_post_interactions_post_id ON post_interactions(post_id);
+CREATE INDEX idx_post_interactions_type ON post_interactions(interaction_type);
+CREATE INDEX idx_post_interactions_created_at ON post_interactions(created_at DESC);
+CREATE INDEX idx_post_interactions_user_post ON post_interactions(user_id, post_id);
+
+-- Indexes for post_comments
+CREATE INDEX idx_post_comments_post_id ON post_comments(post_id);
+CREATE INDEX idx_post_comments_player_id ON post_comments(player_id);
+CREATE INDEX idx_post_comments_parent_id ON post_comments(parent_comment_id);
+CREATE INDEX idx_post_comments_created_at ON post_comments(created_at DESC);
+CREATE INDEX idx_post_comments_deleted_at ON post_comments(deleted_at);
+
+-- Function to update post engagement stats (trigger-based)
+CREATE OR REPLACE FUNCTION update_post_engagement_stats()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Update or insert engagement stats
+    INSERT INTO post_engagement_stats (
+        post_id,
+        view_count,
+        like_count,
+        comment_count,
+        share_count,
+        save_count,
+        unique_viewers,
+        last_updated
+    )
+    SELECT
+        NEW.post_id,
+        COUNT(*) FILTER (WHERE interaction_type = 'view'),
+        COUNT(*) FILTER (WHERE interaction_type = 'like'),
+        COUNT(*) FILTER (WHERE interaction_type = 'comment'),
+        COUNT(*) FILTER (WHERE interaction_type = 'share'),
+        COUNT(*) FILTER (WHERE interaction_type = 'save'),
+        COUNT(DISTINCT user_id) FILTER (WHERE interaction_type = 'view'),
+        NOW()
+    FROM post_interactions
+    WHERE post_id = NEW.post_id
+    ON CONFLICT (post_id) DO UPDATE SET
+        view_count = EXCLUDED.view_count,
+        like_count = EXCLUDED.like_count,
+        comment_count = EXCLUDED.comment_count,
+        share_count = EXCLUDED.share_count,
+        save_count = EXCLUDED.save_count,
+        unique_viewers = EXCLUDED.unique_viewers,
+        engagement_rate = CASE
+            WHEN EXCLUDED.view_count > 0
+            THEN (EXCLUDED.like_count + EXCLUDED.comment_count + EXCLUDED.share_count)::float / EXCLUDED.view_count
+            ELSE 0
+        END,
+        last_updated = NOW();
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to update engagement stats on new interactions
+CREATE TRIGGER trigger_update_post_engagement_stats
+AFTER INSERT ON post_interactions
+FOR EACH ROW
+EXECUTE FUNCTION update_post_engagement_stats();
+
+-- Function to calculate viral score (can be run periodically)
+CREATE OR REPLACE FUNCTION calculate_viral_scores()
+RETURNS void AS $$
+BEGIN
+    UPDATE post_engagement_stats pes
+    SET viral_score = (
+        SELECT
+            (
+                like_count * 1.0 +
+                comment_count * 3.0 +
+                share_count * 5.0
+            ) * EXP(-EXTRACT(EPOCH FROM (NOW() - p.created_at)) / 86400.0)  -- Decay over days
+        FROM posts p
+        WHERE p.id = pes.post_id
+    ),
+    last_updated = NOW();
+END;
+$$ LANGUAGE plpgsql;
+
+-- View for trending posts (frequently used query)
+CREATE OR REPLACE VIEW trending_posts AS
+SELECT
+    p.id,
+    p.player_id,
+    p.content,
+    p.media_urls,
+    p.hashtags,
+    p.created_at,
+    CONCAT(pl.first_name, ' ', pl.last_name) as author_name,
+    pl.profile_picture as author_avatar,
+    pes.like_count,
+    pes.comment_count,
+    pes.share_count,
+    pes.view_count,
+    pes.engagement_rate,
+    pes.viral_score
+FROM posts p
+JOIN players pl ON p.player_id = pl.id
+LEFT JOIN post_engagement_stats pes ON p.id = pes.post_id
+WHERE p.deleted_at IS NULL
+    AND p.visibility = 'public'
+    AND p.created_at > NOW() - INTERVAL '7 days'
+ORDER BY pes.viral_score DESC NULLS LAST;
+
 -- Indexes
 CREATE INDEX idx_players_status ON players(status);
 CREATE INDEX idx_players_gender ON players(gender);
