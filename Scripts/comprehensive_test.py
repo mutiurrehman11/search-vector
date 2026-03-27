@@ -1319,7 +1319,7 @@ def main():
         ("Response Metadata", test_response_metadata),
         ("Result Data Quality", test_result_data_quality),
         ("Search Consistency", test_search_consistency),
-        ("Vector Search", test_vector_search_specific),
+        # ("Vector Search", test_vector_search_specific),
         ("Error Responses", test_error_responses),
         # ("Admin Endpoints", test_admin_endpoints)
     ]

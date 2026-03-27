@@ -1,0 +1,578 @@
+{
+    "metadata": {
+        "candidates_found": 25,
+        "pgvector_available": true,
+        "query_id": "72655ad4394efcfc",
+        "reranked": true,
+        "search_type": "ml_reranked"
+    },
+    "results": [
+        {
+            "age": 31,
+            "distance_km": null,
+            "id": "NJ2IJ0LZ56YGXL811964GUO2WU",
+            "location": {
+                "country": "USA",
+                "latitude": 25.7617,
+                "longitude": -80.1918,
+                "name": "Miami"
+            },
+            "match_score": 0.8811111111111112,
+            "name": "Carlos Jones",
+            "position": [
+                "midfielder"
+            ],
+            "rerank_score": 0.31071668641558886,
+            "similarity_score": 0.7758044004440308,
+            "skill_level": 67.83333333333333,
+            "skills": {
+                "dribbling": 62,
+                "passing": 53,
+                "shooting": 82,
+                "speed": 73,
+                "stamina": 94,
+                "strength": 43
+            },
+            "status": "active"
+        },
+        {
+            "age": 24,
+            "distance_km": null,
+            "id": "YC1QVHHV4N87MBAI2T5W39RK4L",
+            "location": {
+                "country": "Germany",
+                "latitude": 52.52,
+                "longitude": 13.405,
+                "name": "Berlin"
+            },
+            "match_score": 0.8777777777777778,
+            "name": "Emma Gonzalez",
+            "position": [
+                "midfielder"
+            ],
+            "rerank_score": -0.08532645359976312,
+            "similarity_score": 0.8075353984555854,
+            "skill_level": 68.33333333333333,
+            "skills": {
+                "dribbling": 86,
+                "passing": 91,
+                "shooting": 73,
+                "speed": 43,
+                "stamina": 68,
+                "strength": 49
+            },
+            "status": "active"
+        },
+        {
+            "age": 28,
+            "distance_km": null,
+            "id": "EAZCQ0FLI7OCOKJHX9WZKXJGT5",
+            "location": {
+                "country": "USA",
+                "latitude": 41.8781,
+                "longitude": -87.6298,
+                "name": "Chicago"
+            },
+            "match_score": 0.8988888888888887,
+            "name": "Luis Thomas",
+            "position": [
+                "midfielder"
+            ],
+            "rerank_score": -0.39677980642765265,
+            "similarity_score": 0.680668313463432,
+            "skill_level": 65.16666666666667,
+            "skills": {
+                "dribbling": 89,
+                "passing": 46,
+                "shooting": 76,
+                "speed": 55,
+                "stamina": 61,
+                "strength": 64
+            },
+            "status": "active"
+        },
+        {
+            "age": 24,
+            "distance_km": null,
+            "id": "3D3PTVDDV3OIKKV3DSJDZ5U9V8",
+            "location": {
+                "country": "Spain",
+                "latitude": 41.3851,
+                "longitude": 2.1734,
+                "name": "Barcelona"
+            },
+            "match_score": 0.9055555555555556,
+            "name": "Abigail Martinez",
+            "position": [
+                "midfielder"
+            ],
+            "rerank_score": -0.6015633183346363,
+            "similarity_score": 0.7907086846443622,
+            "skill_level": 64.16666666666667,
+            "skills": {
+                "dribbling": 79,
+                "passing": 51,
+                "shooting": 85,
+                "speed": 52,
+                "stamina": 44,
+                "strength": 74
+            },
+            "status": "active"
+        },
+        {
+            "age": 16,
+            "distance_km": null,
+            "id": "H2O0441FHMS7HGBT5JY6U0OJCP",
+            "location": {
+                "country": "USA",
+                "latitude": 29.7604,
+                "longitude": -95.3698,
+                "name": "Houston"
+            },
+            "match_score": 0.8911111111111111,
+            "name": "Sophia Gonzalez",
+            "position": [
+                "midfielder"
+            ],
+            "rerank_score": -0.6675216056031575,
+            "similarity_score": 0.7016331166515686,
+            "skill_level": 66.33333333333333,
+            "skills": {
+                "dribbling": 90,
+                "passing": 45,
+                "shooting": 78,
+                "speed": 72,
+                "stamina": 57,
+                "strength": 56
+            },
+            "status": "active"
+        },
+        {
+            "age": 26,
+            "distance_km": null,
+            "id": "W16537MA0BX3R9CGDNCSBESZKK",
+            "location": {
+                "country": "USA",
+                "latitude": 34.0522,
+                "longitude": -118.2437,
+                "name": "Los Angeles"
+            },
+            "match_score": 0.8955555555555555,
+            "name": "William Moore",
+            "position": [
+                "midfielder"
+            ],
+            "rerank_score": -0.754727043987743,
+            "similarity_score": 0.6941028237342834,
+            "skill_level": 65.66666666666667,
+            "skills": {
+                "dribbling": 73,
+                "passing": 59,
+                "shooting": 78,
+                "speed": 58,
+                "stamina": 83,
+                "strength": 43
+            },
+            "status": "active"
+        },
+        {
+            "age": 19,
+            "distance_km": null,
+            "id": "HCT81RGON8EYFFUB28EHXOPR22",
+            "location": {
+                "country": "France",
+                "latitude": 48.8566,
+                "longitude": 2.3522,
+                "name": "Paris"
+            },
+            "match_score": 0.8533333333333334,
+            "name": "Charlotte Anderson",
+            "position": [
+                "midfielder"
+            ],
+            "rerank_score": -0.8200522321136866,
+            "similarity_score": 0.7281057834625244,
+            "skill_level": 72.0,
+            "skills": {
+                "dribbling": 77,
+                "passing": 85,
+                "shooting": 75,
+                "speed": 88,
+                "stamina": 59,
+                "strength": 48
+            },
+            "status": "active"
+        },
+        {
+            "age": 33,
+            "distance_km": null,
+            "id": "B0DS8I762KLH6P5W43U9JBTU7I",
+            "location": {
+                "country": "USA",
+                "latitude": 41.8781,
+                "longitude": -87.6298,
+                "name": "Chicago"
+            },
+            "match_score": 0.9344444444444444,
+            "name": "Robert Thomas",
+            "position": [
+                "midfielder"
+            ],
+            "rerank_score": -0.8468318845204164,
+            "similarity_score": 0.7792255282402039,
+            "skill_level": 59.833333333333336,
+            "skills": {
+                "dribbling": 73,
+                "passing": 41,
+                "shooting": 50,
+                "speed": 80,
+                "stamina": 55,
+                "strength": 60
+            },
+            "status": "active"
+        },
+        {
+            "age": 30,
+            "distance_km": null,
+            "id": "GS3UC5YR8PMIJQQLHPF1DY41JA",
+            "location": {
+                "country": "USA",
+                "latitude": 41.8781,
+                "longitude": -87.6298,
+                "name": "Chicago"
+            },
+            "match_score": 0.931111111111111,
+            "name": "Carlos Brown",
+            "position": [
+                "midfielder"
+            ],
+            "rerank_score": -0.8637968534631522,
+            "similarity_score": 0.8171516278801466,
+            "skill_level": 60.333333333333336,
+            "skills": {
+                "dribbling": 49,
+                "passing": 53,
+                "shooting": 94,
+                "speed": 51,
+                "stamina": 59,
+                "strength": 56
+            },
+            "status": "active"
+        },
+        {
+            "age": 26,
+            "distance_km": null,
+            "id": "BKTY92E7FU1GOO9MSD68OXSPH9",
+            "location": {
+                "country": "Germany",
+                "latitude": 52.52,
+                "longitude": 13.405,
+                "name": "Berlin"
+            },
+            "match_score": 0.931111111111111,
+            "name": "Robert Gonzalez",
+            "position": [
+                "midfielder"
+            ],
+            "rerank_score": -0.8637968534631522,
+            "similarity_score": 0.7845632562301617,
+            "skill_level": 60.333333333333336,
+            "skills": {
+                "dribbling": 50,
+                "passing": 45,
+                "shooting": 54,
+                "speed": 81,
+                "stamina": 71,
+                "strength": 61
+            },
+            "status": "active"
+        },
+        {
+            "age": 35,
+            "distance_km": null,
+            "id": "A1BDY6KQXQIQYJQN7U7MZ5USF4",
+            "location": {
+                "country": "Germany",
+                "latitude": 52.52,
+                "longitude": 13.405,
+                "name": "Berlin"
+            },
+            "match_score": 0.8855555555555554,
+            "name": "Charlotte Martin",
+            "position": [
+                "midfielder"
+            ],
+            "rerank_score": -0.9382402811151166,
+            "similarity_score": 0.765472219316497,
+            "skill_level": 67.16666666666667,
+            "skills": {
+                "dribbling": 57,
+                "passing": 73,
+                "shooting": 48,
+                "speed": 60,
+                "stamina": 80,
+                "strength": 85
+            },
+            "status": "active"
+        },
+        {
+            "age": 18,
+            "distance_km": null,
+            "id": "L85H2CAO659GCWBLHVWBF5W97J",
+            "location": {
+                "country": "USA",
+                "latitude": 40.7128,
+                "longitude": -74.006,
+                "name": "New York"
+            },
+            "match_score": 0.8944444444444445,
+            "name": "James Smith",
+            "position": [
+                "midfielder"
+            ],
+            "rerank_score": -0.9682432489681845,
+            "similarity_score": 0.7928257461086374,
+            "skill_level": 65.83333333333333,
+            "skills": {
+                "dribbling": 77,
+                "passing": 73,
+                "shooting": 66,
+                "speed": 42,
+                "stamina": 77,
+                "strength": 60
+            },
+            "status": "active"
+        },
+        {
+            "age": 35,
+            "distance_km": null,
+            "id": "6UP1THPSDXKFDWFTHRKNNY658G",
+            "location": {
+                "country": "Spain",
+                "latitude": 40.4168,
+                "longitude": -3.7038,
+                "name": "Madrid"
+            },
+            "match_score": 0.84,
+            "name": "Charlotte Lee",
+            "position": [
+                "midfielder"
+            ],
+            "rerank_score": -1.1088936407320078,
+            "similarity_score": 0.8060788512229919,
+            "skill_level": 74.0,
+            "skills": {
+                "dribbling": 64,
+                "passing": 95,
+                "shooting": 93,
+                "speed": 43,
+                "stamina": 76,
+                "strength": 73
+            },
+            "status": "active"
+        },
+        {
+            "age": 25,
+            "distance_km": null,
+            "id": "4KGXTLHH67L016WLP771684DYH",
+            "location": {
+                "country": "USA",
+                "latitude": 34.0522,
+                "longitude": -118.2437,
+                "name": "Los Angeles"
+            },
+            "match_score": 0.8333333333333334,
+            "name": "Olivia Moore",
+            "position": [
+                "midfielder"
+            ],
+            "rerank_score": -1.1314249594421972,
+            "similarity_score": 0.7509490251541138,
+            "skill_level": 75.66666666666667,
+            "skills": {
+                "dribbling": 94,
+                "passing": 84,
+                "shooting": 45,
+                "speed": 78,
+                "stamina": 89,
+                "strength": 64
+            },
+            "status": "active"
+        },
+        {
+            "age": 21,
+            "distance_km": null,
+            "id": "KGM8J767R92NAWHS2O1PGG58F4",
+            "location": {
+                "country": "USA",
+                "latitude": 41.8781,
+                "longitude": -87.6298,
+                "name": "Chicago"
+            },
+            "match_score": 0.8888888888888888,
+            "name": "Emma Smith",
+            "position": [
+                "midfielder"
+            ],
+            "rerank_score": -1.1368914462552555,
+            "similarity_score": 0.7197343921582223,
+            "skill_level": 66.66666666666667,
+            "skills": {
+                "dribbling": 87,
+                "passing": 93,
+                "shooting": 74,
+                "speed": 59,
+                "stamina": 40,
+                "strength": 47
+            },
+            "status": "active"
+        },
+        {
+            "age": 35,
+            "distance_km": null,
+            "id": "OK22UY8OUZ5OL89TU98O1LKQDS",
+            "location": {
+                "country": "USA",
+                "latitude": 41.8781,
+                "longitude": -87.6298,
+                "name": "Chicago"
+            },
+            "match_score": 0.9577777777777777,
+            "name": "John Lee",
+            "position": [
+                "midfielder"
+            ],
+            "rerank_score": -1.243241010373955,
+            "similarity_score": 0.7688753008842468,
+            "skill_level": 56.333333333333336,
+            "skills": {
+                "dribbling": 46,
+                "passing": 68,
+                "shooting": 71,
+                "speed": 40,
+                "stamina": 60,
+                "strength": 53
+            },
+            "status": "active"
+        },
+        {
+            "age": 16,
+            "distance_km": null,
+            "id": "GHUIUETXVO5IKZKT19UQTJ6EB2",
+            "location": {
+                "country": "USA",
+                "latitude": 34.0522,
+                "longitude": -118.2437,
+                "name": "Los Angeles"
+            },
+            "match_score": 0.9266666666666667,
+            "name": "John Smith",
+            "position": [
+                "midfielder"
+            ],
+            "rerank_score": -1.258478718174045,
+            "similarity_score": 0.6464067101478577,
+            "skill_level": 61.0,
+            "skills": {
+                "dribbling": 54,
+                "passing": 60,
+                "shooting": 41,
+                "speed": 64,
+                "stamina": 92,
+                "strength": 55
+            },
+            "status": "active"
+        },
+        {
+            "age": 35,
+            "distance_km": null,
+            "id": "862S6S4RBPWR9E2FB8F5N9B88I",
+            "location": {
+                "country": "USA",
+                "latitude": 34.0522,
+                "longitude": -118.2437,
+                "name": "Los Angeles"
+            },
+            "match_score": 0.8522222222222222,
+            "name": "William Williams",
+            "position": [
+                "midfielder"
+            ],
+            "rerank_score": -1.2882046681244879,
+            "similarity_score": 0.7353616514586431,
+            "skill_level": 72.16666666666667,
+            "skills": {
+                "dribbling": 56,
+                "passing": 81,
+                "shooting": 84,
+                "speed": 66,
+                "stamina": 86,
+                "strength": 60
+            },
+            "status": "active"
+        },
+        {
+            "age": 24,
+            "distance_km": null,
+            "id": "NF4Z6I9ZKK6ASJWPWRBX3NX229",
+            "location": {
+                "country": "USA",
+                "latitude": 34.0522,
+                "longitude": -118.2437,
+                "name": "Los Angeles"
+            },
+            "match_score": 0.8522222222222222,
+            "name": "Diego Rodriguez",
+            "position": [
+                "midfielder"
+            ],
+            "rerank_score": -1.2882046681244879,
+            "similarity_score": 0.7194535732269287,
+            "skill_level": 72.16666666666667,
+            "skills": {
+                "dribbling": 81,
+                "passing": 88,
+                "shooting": 44,
+                "speed": 48,
+                "stamina": 84,
+                "strength": 88
+            },
+            "status": "active"
+        },
+        {
+            "age": 33,
+            "distance_km": null,
+            "id": "ZVXA6IW63WJYMYMB5UZSRK6L45",
+            "location": {
+                "country": "Germany",
+                "latitude": 52.52,
+                "longitude": 13.405,
+                "name": "Berlin"
+            },
+            "match_score": 0.958888888888889,
+            "name": "David Gonzalez",
+            "position": [
+                "midfielder"
+            ],
+            "rerank_score": -1.3660655781084154,
+            "similarity_score": 0.8328628788251546,
+            "skill_level": 56.166666666666664,
+            "skills": {
+                "dribbling": 76,
+                "passing": 42,
+                "shooting": 53,
+                "speed": 46,
+                "stamina": 80,
+                "strength": 40
+            },
+            "status": "active"
+        }
+    ],
+    "telemetry": {
+        "filter_time_ms": 1461.9150161743164,
+        "rerank_time_ms": 8.06879997253418,
+        "total_time_ms": 2352.198362350464,
+        "vector_time_ms": 881.2131881713867
+    },
+    "total": 25
+}

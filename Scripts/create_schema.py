@@ -19,6 +19,8 @@ load_dotenv()
 
 def create_schema():
     """Create the database schema"""
+    conn = None
+    cur = None
     try:
         # Database configuration: prefer app Config, fallback to env/hardcoded
         if AppConfig is not None:
@@ -42,22 +44,27 @@ def create_schema():
                 user='devuser',
                 password='testdev123'
             )
-        cursor = conn.cursor()
-
+        cur = conn.cursor()
+    
+        # Read schema from file
+        with open('Database/schema.sql', 'r') as f:
+            schema_sql = f.read()
+    
         print("Applying database schema...")
-        with open('Database/schema.sql', 'r', encoding='utf-8') as f:
-            cursor.execute(f.read())
-        print("Schema applied successfully.")
-        
+        # Drop existing tables
+        cur.execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public;")
+        cur.execute(schema_sql)
         conn.commit()
-        cursor.close()
-        conn.close()
-        
+        print("✅ Database schema created successfully")
         return True
-        
     except Exception as e:
         print(f"❌ Failed to create schema: {e}")
         return False
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
 
 if __name__ == "__main__":
     success = create_schema()

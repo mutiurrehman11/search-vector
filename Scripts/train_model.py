@@ -59,13 +59,16 @@ def prepare_training_data(df):
 
 def main():
     """Main function to train and save the model."""
+    print("Starting model training...")
     conn = get_db_connection()
     engagement_df = fetch_engagement_data(conn)
     print("Successfully fetched engagement data:")
     print(engagement_df.head())
 
     # Prepare data
+    print("Preparing data for training...")
     data_df = prepare_training_data(engagement_df)
+    print("Data preparation complete.")
 
     # Define features and target
     features = ['query_length'] # Add more features here
@@ -92,27 +95,16 @@ def main():
     groups_test = test_df.groupby(group_col).size().to_numpy()
 
 
-    ranker = lgb.LGBMRanker(
-        objective="lambdarank",
-        metric="ndcg",
-        n_estimators=100,
-        learning_rate=0.1,
-        random_state=42
-    )
+    # Create an instance of MLReRanker
+    reranker = MLReRanker(model_path="models/reranker.pkl")
 
-    ranker.fit(
-        X_train, y_train, group=groups_train,
-        eval_set=[(X_test, y_test)],
-        eval_group=[groups_test],
-        callbacks=[lgb.early_stopping(10, verbose=True)]
-    )
-
-    # Save the model
-    reranker = MLReRanker()
-    reranker.model = ranker
-    reranker.save_model("models/reranker.pkl")
-
-    print("\nModel trained and saved as models/reranker.pkl")
+    # Train the model using the MLReRanker's train method
+    if reranker.train(conn):
+        # Save the model (which now includes the fitted scaler)
+        reranker.save_model("models/reranker.pkl")
+        print("\nModel trained and saved as models/reranker.pkl")
+    else:
+        print("\nModel training failed.")
 
     conn.close()
 

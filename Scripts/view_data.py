@@ -27,11 +27,7 @@ def view_all_tables(conn):
     print("Fetching data from all tables...")
     
     tables = [
-        'tenants', 'players', 'player_skills', 'player_teams', 'player_improvements',
-        'player_goals', 'player_training_sessions', 'views', 'follows', 'chat_rooms',
-        'chat_messages', 'playlists', 'skills', 'categories', 'divisions',
-        'soccer_positions', 'countries', 'states', 'cities', 'player_engagement_stats',
-        'player_engagement_events', 'saved_searches'
+        'player_engagement_events'
     ]
 
     all_data = {}
@@ -43,8 +39,9 @@ def view_all_tables(conn):
         try:
             # Use RealDictCursor to get results as dictionaries
             with conn.cursor(cursor_factory=RealDictCursor) as dict_cur:
-                dict_cur.execute(f"SELECT * FROM {table_name} LIMIT 10;") # Limit to 10 rows per table
+                dict_cur.execute(f"SELECT * FROM {table_name};")
                 rows = dict_cur.fetchall()
+                print(f"  - Fetched {len(rows)} rows from {table_name.upper()}.")
                 
                 # Convert datetime objects to strings for JSON serialization
                 for row in rows:
